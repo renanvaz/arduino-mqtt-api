@@ -1,4 +1,5 @@
 import Q from 'q';
+import {EventEmitter} from 'events';
 
 export const INPUT          = 'INPUT';
 export const OUTPUT         = 'OUTPUT';
@@ -11,28 +12,72 @@ export const DEFAULT        = 'DEFAULT';
 export const EXTERNAL       = 'EXTERNAL';
 export const INTERNAL       = 'INTERNAL';
 
-export class Board {
+const MAX_MESSAGE_ID = 999999;
+const MESSAGE_ID = 0;
+
+export class Board extends EventEmitter {
     // Construct
     /**
      * Constructor
      * @param  {string} IP
      * @return {void}
      */
-    constructor(IP) {
-        this._ip = IP;
+    constructor(client) {
+        super();
+
+        this._client = client;
         this._status = DISCONNECTED;
 
         this._valuesPinMode         = [INPUT, OUTPUT];
         this._valuesDigitalLevel    = [HIGH, LOW];
         this._valuesAnalogReference = [DEFAULT, EXTERNAL, INTERNAL];
 
+        this._client.on('message', function (topic, message) {
+            this.emit(topic, message);
+        });
+
         // Communication
         this.Serial = {};
         this.Stream = {};
     }
 
-    get IP() {
-      return this._ip;
+    /**
+     * Get instance of the client MQTT
+     * @return {Client} MQTT Client instance
+     */
+    get client() {
+        return this._client;
+    }
+
+    /**
+     * Genherate a message ID
+     * @return {int} Message ID
+     */
+    genMessageID() {
+        MESSAGE_ID = ++MESSAGE_ID;
+        MESSAGE_ID = MESSAGE_ID > MAX_MESSAGE_ID ? 0 : MESSAGE_ID;
+
+        return MESSAGE_ID;
+    }
+
+    /**
+     * Wait for a return to an action that requires response
+     * @param  {string}   topic
+     * @param  {function} cb
+     * @return {void}
+     */
+    await(topic, cb) {
+        this.client.subscribe(topic, (err) => {
+            if (err) throw err;
+        });
+
+        this.once(topic, (message) => {
+            this.client.unsubscribe(topic, (err) => {
+                if (err) throw err;
+            });
+
+            cb(message);
+        });
     }
 
     // Digital I/O
@@ -43,18 +88,12 @@ export class Board {
      * @return {Promise}
      */
     pinMode(pin, mode) {
-        let d = Q.defer();
-
         if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
         if (this._valuesPinMode.indexOf(mode) === -1) { throw new Error('Invalid value of param "mode": ' + mode); }
 
-        if (this._status == CONNECTED) {
-            setTimeout(() => { d.resolve(); }, 0);
-        } else {
-            setTimeout(() => { d.reject(); }, 0);
+        if (this._status !== CONNECTED) {
+            // Error
         }
-
-        return d.promise;
     }
 
     /**
@@ -64,18 +103,14 @@ export class Board {
      * @return {Promise}
      */
     digitalWrite(pin, level) {
-        let d = Q.defer();
-
         if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
         if (this._valuesDigitalLevel.indexOf(level) === -1) { throw new Error('Invalid value of param "level": ' + level); }
 
         if (this._status == CONNECTED) {
-            setTimeout(() => { d.resolve(); }, 0);
+            this.client.publish('digitalWrite', pin+'|'+level);
         } else {
-            setTimeout(() => { d.reject(); }, 0);
-        }
 
-        return d.promise;
+        }
     }
 
     /**
@@ -84,11 +119,14 @@ export class Board {
      * @return {Promise}
      */
     digitalRead(pin) {
-        let d = Q.defer();
+        let d = Q.defer(),
+            messageID = this.genMessageID();
 
         if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
 
         if (this._status == CONNECTED) {
+            this.client.publish('digitalRead', messageID+'|'+pin);
+            this.await(id, cb);
             d.resolve(LOW);
         } else {
             setTimeout(() => { d.reject(); }, 0);
@@ -136,7 +174,6 @@ export class Board {
 
     /**
      * Writes an analog value (PWM wave) to a pin.
-     *
      * @param  {integer} pin
      * @param  {integer} value
      * @return {Promise}
