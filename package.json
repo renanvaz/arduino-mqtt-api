@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "lint": "eslint lib/Board.ts || true",
-    "build": "babel src -d lib",
+    "build": "rm -r lib/* && babel src -d lib",
     "test": "jasmine || true",
     "watch": ""
   },
