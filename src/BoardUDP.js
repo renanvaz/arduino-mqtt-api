@@ -31,8 +31,10 @@ export class Board extends EventEmitter {
         this._valuesDigitalLevel    = [HIGH, LOW];
         this._valuesAnalogReference = [DEFAULT, EXTERNAL, INTERNAL];
 
-        this._client.on('publish', (packet) => {
-            this.emit(packet.topic, packet.payload.toString());
+        this._client.on('publish', (message) => {
+            let data = message.toString().splia('|');
+
+            this.emit(data[0], data[1]);
         });
 
         // Communication
@@ -121,8 +123,11 @@ export class Board extends EventEmitter {
             d.resolve(message);
         });
 
-        this.client.publish({topic: 'digitalRead', payload: messageID+'|'+pin});
+        let b = new Buffer('digitalRead|'+messageID+'|'+pin);
 
+        this.client.send(b, 0, b.length, 41234, 'localhost', (err) => {
+          this.client.close();
+        });
         return d.promise;
     }
 

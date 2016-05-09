@@ -1,19 +1,28 @@
-import mqtt from 'mqtt';
+import * as mqtt from 'mqtt';
+import {Board} from './Board';
 
 let clients = {};
 
-new mqtt.Server((client) => {
+var server = new mqtt.Server((client) => {
     client.on('connect', (packet) => {
-        console.log("CONNECT(%s): %j", packet.clientId, packet);
+        // console.log("CONNECT(%s): %j", packet.clientId, packet);
 
         client.connack({returnCode: 0});
         client.id = packet.clientId;
 
         clients[client.id] = client;
+
+        let b = new Board(server, client);
+
+        console.time('dbsave');
+        b.digitalRead(10).then(function(message){
+            console.timeEnd('dbsave');
+            console.log('digitalRead', message);
+        });
     });
 
     client.on('publish', (packet) => {
-        console.log("PUBLISH(%s): %j", client.id, packet);
+        // console.log("PUBLISH(%s): %j", client.id, packet);
 
         for (let k in clients) {
             clients[k].publish({topic: packet.topic, payload: packet.payload});
@@ -21,7 +30,7 @@ new mqtt.Server((client) => {
     });
 
     client.on('subscribe', (packet) => {
-        console.log("SUBSCRIBE(%s): %j", client.id, packet);
+        // console.log("SUBSCRIBE(%s): %j", client.id, packet);
 
         let granted = [];
         for (let i = 0, l = packet.subscriptions.length; i < l; i++) {
