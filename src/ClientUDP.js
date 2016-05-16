@@ -2,30 +2,14 @@ import {EventEmitter} from 'events';
 import dgram from 'dgram';
 import Q from 'q';
 
-const message = new Buffer('Some bytes');
-const client = dgram.createSocket('udp4');
-client.on('message', (message, rinfo) => {
-    var data = message.toString().split('|');
-
-    if (data[0] == 'digitalRead') {
-        let b = new Buffer(data[1]+'|PIN VALUE');
-        client.send(b, 0, b.length, 41234, 'localhost');
-    }
-});
-
-client.bind(43214, function(){
-    client.send(message, 0, message.length, 41234, 'localhost', (err) => {
-      client.close();
-    });
-});
-
-
 export class Client extends EventEmitter {
-    construct(host, port) {
-        this._host = host;
-        this._port = port;
-
+    construct() {
         this.socket = dgram.createSocket('udp4');
+
+        this.socket.on('error', (err) => {
+            console.log(`client error:\n${err.stack}`);
+            this.socket.close();
+        });
 
         this.socket.on('message', (message, rinfo) => {
             // topic:message
@@ -37,13 +21,24 @@ export class Client extends EventEmitter {
     }
 
     send(...message) {
-        let buffer = new Buffer(message.join('|'));
+        let d = Q.defer(),
+            buffer = new Buffer(message.join('|'));
 
         this.socket.send(buffer, 0, buffer.length, this._port, this._host, (err) => {
-            if (err) throw err;
-
-          this.socket.close();
+            if (err) d.reject(err);
+            else d.resolve();
         });
+
+        return d.promise;
+    }
+
+    close() {
+        this.socket.close();
+    }
+
+    connect(host, port) {
+        this._host = host;
+        this._port = port;
     }
 
     get host() {
