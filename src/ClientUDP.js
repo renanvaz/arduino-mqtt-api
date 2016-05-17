@@ -20,16 +20,14 @@ export class Client extends EventEmitter {
         });
     }
 
-    send(...message) {
+    send(topic, ...message) {
         let d = Q.defer(),
-            buffer = new Buffer(message.join('|'));
+            buffer = new Buffer(topic+':'+message.join('|'));
 
-        this.socket.send(buffer, 0, buffer.length, this._port, this._host, (err) => {
+        this.socket.send(buffer, 0, buffer.length, client.port, client.host (err) => {
             if (err) d.reject(err);
             else d.resolve();
         });
-
-        return d.promise;
     }
 
     close() {
