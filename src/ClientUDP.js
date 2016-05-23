@@ -2,8 +2,10 @@ import {EventEmitter} from 'events';
 import dgram from 'dgram';
 import Q from 'q';
 
-export class Client extends EventEmitter {
-    construct() {
+export default class Client extends EventEmitter {
+    constructor() {
+        super();
+
         this.socket = dgram.createSocket('udp4');
 
         this.socket.on('error', (err) => {
@@ -11,12 +13,14 @@ export class Client extends EventEmitter {
             this.socket.close();
         });
 
-        this.socket.on('message', (message, rinfo) => {
+        this.socket.on('message', (msg, rinfo) => {
             // topic:message
-            var data = message.toString().split(/([^:]+):(.*)/);
+            let data = msg.toString().split(/([^:]+):(.*)/),
+                topic = data[1],
+                params = data[2].split('|');
 
-            this.emmit('message', data[1], data[2]);
-            this.emmit(data[1], data[2]);
+            this.emit(topic, ...params);
+            this.emit('message', topic, ...params);
         });
     }
 
@@ -24,19 +28,23 @@ export class Client extends EventEmitter {
         let d = Q.defer(),
             buffer = new Buffer(topic+':'+message.join('|'));
 
-        this.socket.send(buffer, 0, buffer.length, client.port, client.host (err) => {
+        this.socket.send(buffer, 0, buffer.length, this.port, this.host, (err) => {
             if (err) d.reject(err);
             else d.resolve();
         });
+
+        return d.promise;
     }
 
     close() {
         this.socket.close();
     }
 
-    connect(host, port) {
+    connect(port, host) {
         this._host = host;
         this._port = port;
+
+        return this.send('hi');
     }
 
     get host() {

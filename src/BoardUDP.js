@@ -31,10 +31,8 @@ export class Board extends EventEmitter {
         this._valuesDigitalLevel    = [HIGH, LOW];
         this._valuesAnalogReference = [DEFAULT, EXTERNAL, INTERNAL];
 
-        this._client.on('publish', (message) => {
-            let data = message.toString().splia('|');
-
-            this.emit(data[0], data[1]);
+        this._client.on('message', (topic, ...message) => {
+            this.emit(topic, ...message);
         });
 
         // Communication
@@ -99,7 +97,7 @@ export class Board extends EventEmitter {
         if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
         if (this._valuesDigitalLevel.indexOf(level) === -1) { throw new Error('Invalid value of param "level": ' + level); }
 
-        this.client.publish('digitalWrite', pin+'|'+level);
+        this.client.send('digitalWrite', pin+'|'+level);
     }
 
     /**
@@ -111,23 +109,16 @@ export class Board extends EventEmitter {
         let d = Q.defer(),
             messageID;
 
-        console.log('digitalRead');
-
         if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
 
         messageID = this.genMessageID();
-
-        console.log('messageID', messageID);
 
         this.await(messageID, (message) => {
             d.resolve(message);
         });
 
-        let b = new Buffer('digitalRead|'+messageID+'|'+pin);
+        this.client.send('digitalRead', messageID, pin);
 
-        this.client.send(b, 0, b.length, 41234, 'localhost', (err) => {
-          this.client.close();
-        });
         return d.promise;
     }
 

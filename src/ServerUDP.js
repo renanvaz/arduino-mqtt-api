@@ -2,8 +2,10 @@ import {EventEmitter} from 'events';
 import dgram from 'dgram';
 import Q from 'q';
 
-class ServerClient {
-    construct(server, port, host) {
+class ServerClient extends EventEmitter {
+    constructor(server, port, host) {
+        super();
+
         this._host = host;
         this._port = port;
 
@@ -23,8 +25,10 @@ class ServerClient {
     }
 }
 
-export class Server extends EventEmitter {
-    construct(port) {
+export default class Server extends EventEmitter {
+    constructor(port) {
+        super();
+
         this._port = port;
         this._clients = {};
 
@@ -40,15 +44,22 @@ export class Server extends EventEmitter {
 
         this.socket.on('message', (msg, rinfo) => {
             // topic:message
-            let data = message.toString().split(/([^:]+):(.*)/);
+            let data = msg.toString().split(/([^:]+):(.*)/),
+                topic = data[1],
+                params = data[2].split('|');
 
             if (data[1] == 'hi') {
-                let client = new ServerClient(this.socket, rinfo.port, rinfo.address);
+                let client = new ServerClient(this, rinfo.port, rinfo.address);
                 this._clients[rinfo.address+':'+rinfo.port] = client;
-                this.emmit('connected', client);
+                this.emit('client', client);
             } else {
-                this.emmit('message', data[1], data[2]);
-                this.emmit(data[1], data[2]);
+                let client = this._clients[rinfo.address+':'+rinfo.port];
+
+                client.emit(topic, ...params);
+                client.emit('message', topic, ...params);
+
+                this.emit(topic, ...params);
+                this.emit('message', topic, ...params);
             }
         });
 
@@ -57,11 +68,9 @@ export class Server extends EventEmitter {
             console.log(`server listening ${address.address}:${address.port}`);
         });
 
-        this.socket.bind(this._port, () => {
-            //
-        });
+        this.socket.bind(this._port);
 
-        setTimeout(() => {
+        /**setTimeout(() => {
             if (this._pingtries) {
                 let client;
 
@@ -69,17 +78,19 @@ export class Server extends EventEmitter {
                     client.send('ping');
                 }
             }
-        }, this._pingtimeout);
+        }, this._pingtimeout);*/
     }
 
     send(client, topic, ...message) {
         let d = Q.defer(),
             buffer = new Buffer(topic+':'+message.join('|'));
 
-        this.socket.send(buffer, 0, buffer.length, client.port, client.host (err) => {
+        this.socket.send(buffer, 0, buffer.length, client.port, client.host, (err) => {
             if (err) d.reject(err);
             else d.resolve();
         });
+
+        return d.promise;
     }
 
     close() {
