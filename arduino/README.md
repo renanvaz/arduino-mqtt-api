@@ -12,3 +12,9 @@
     - Make sure you have selected a board, port, and closed Serial Monitor
     - Select Tools > ESP8266 Sketch Data Upload. This should start uploading the files into ESP8266 flash file system. When done, IDE status bar will display SPIFFS Image Uploaded message.
 
+# Configure the Slave
+
+- Connect to the Slave network WIFI
+- Acess the local IP: 192.168.4.1
+- Configure the data
+- Save!
