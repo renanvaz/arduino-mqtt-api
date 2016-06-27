@@ -108,6 +108,13 @@
             background-color: #03a9f4;
         }
 
+        .alert-success {
+            background-color: #4caf50;
+            color: rgba(255,255,255, 0.84);
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
         @media screen and (max-width: 640px) {
             header {
                 padding: 20px;
@@ -123,19 +130,23 @@
     <div class="ribbon"></div>
     <form method="POST">
         <fieldset>
+            <div class="alert-success">
+                <strong>Well done!</strong> Data saved with success.
+            </div>
+
             <h1>Device info</h1>
             <hr/>
             <label>
                 Device type
-                <input type="text" name="device-id" value="slave-default" disabled/>
+                <input type="text" name="device-type" value="{{ device-type }}" disabled/>
             </label>
             <label>
                 Device ID
-                <input type="text" name="device-id" value="abcde-abcde-abcde-abcde" disabled/>
+                <input type="text" name="device-id" value="{{ device-id }}" disabled/>
             </label>
             <label>
                 Device name
-                <input type="text" name="device-name" value="" placeholder="My Name" required/>
+                <input type="text" name="device-name" value="{{ device-name }}" placeholder="My Name" disabled/>
             </label>
         </fieldset>
 
@@ -144,16 +155,13 @@
             <hr/>
             <label>
                 SSID
-                <input type="text" name="ssid" value="" placeholder="My Network Name" maxlength="50" required/>
+                <input type="text" name="ssid" value="{{ ssid }}" placeholder="My Network Name" maxlength="50" disabled/>
             </label>
             <label>
                 Password
-                <input type="text" name="password" value="" placeholder="123456789" maxlength="32" />
+                <input type="text" name="password" value="{{ password }}" placeholder="123456789" maxlength="32" disabled/>
             </label>
-
-            <button type="submit">Salvar</button>
         </fieldset>
-
     </form>
 </body>
 </html>
