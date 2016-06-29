@@ -14,6 +14,9 @@ unsigned int CONFIG_FLAG_START = 0;
 
 unsigned int MODE;
 
+unsigned int BUTTON_PIN = D1;
+unsigned bool BUTTON_PRESSED = false;
+
 // Create an instance of UDP connection
 WiFiUDP UDP;
 
@@ -27,6 +30,11 @@ struct ConfigStruct {
   char senha[63];
 } wifiConfig;
 
+enum MODES { 
+  CONFIG = 0,
+  SLAVE = 1
+};
+
 void setup() {
   // Init Serial for log data
   Serial.begin(115200);
@@ -37,15 +45,31 @@ void setup() {
 
   MODE = EEPROM.read(CONFIG_FLAG_START);
 
-  if (MODE == 1) {
+  if (MODE == MODES.SLAVE) {
     setupUDPSlave();
   } else {
-     setupModeConfig();
+    setupModeConfig();
   }
 }
 
 void loop() {
-  server.handleClient();
+  if (MODE == MODES.SLAVE) {
+      BUTTON_PRESSED = false;
+    
+      while(digitalRead(BUTTON_PIN) == HIGH) {
+         BUTTON_PRESSED = true;
+      }
+
+      if (BUTTON_PRESSED) {
+        EEPROM.write(CONFIG_FLAG_START, 0);
+  
+        EEPROM.commit();
+
+        ESP.restart();
+      }
+  } else {
+    server.handleClient();
+  }
 }
 
 void handleRootGET() {
@@ -54,6 +78,7 @@ void handleRootGET() {
 
 void handleRootPOST() {
     server.send(200, "text/html", htmlSuccess);
+    ESP.restart();
 }
 
 void saveConfig() {
@@ -123,6 +148,6 @@ void setupModeConfig() {
 }
 
 void setupUDPSlave() {
-  
+  pinMode(BUTTON_CONFIG, INPUT);
 }
 
