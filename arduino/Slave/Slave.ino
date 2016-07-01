@@ -183,6 +183,6 @@ void setupModeConfig() {
 }
 
 void setupUDPSlave() {
-  pinMode(BUTTON_CONFIG, INPUT);
+  pinMode(BUTTON_PIN, INPUT);
 }
 
