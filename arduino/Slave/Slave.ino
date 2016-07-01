@@ -26,6 +26,7 @@ ESP8266WebServer server(80);
 
 // Wifi Config data
 struct ConfigStruct {
+  char deviceName[32];
   char ssid[32];
   char senha[63];
 } wifiConfig;
@@ -77,7 +78,16 @@ void handleRootGET() {
 }
 
 void handleRootPOST() {
+    String deviceName = server.arg("device-name");
+    String ssid       = server.arg("ssid");
+    String password   = server.arg("password");
+    
+    deviceName.toCharArray(wifiConfig.deviceName, 50);
+    ssid.toCharArray(wifiConfig.ssid, 50);
+    password.toCharArray(wifiConfig.password, 50);
+    
     server.send(200, "text/html", htmlSuccess);
+    
     ESP.restart();
 }
 
