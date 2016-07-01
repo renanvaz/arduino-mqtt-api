@@ -82,9 +82,11 @@ void handleRootPOST() {
     String ssid       = server.arg("ssid");
     String password   = server.arg("password");
     
-    deviceName.toCharArray(wifiConfig.deviceName, 50);
-    ssid.toCharArray(wifiConfig.ssid, 50);
-    password.toCharArray(wifiConfig.password, 50);
+    deviceName.toCharArray(wifiConfig.deviceName, 32);
+    ssid.toCharArray(wifiConfig.ssid, 32);
+    password.toCharArray(wifiConfig.password, 63);
+
+    saveConfig();
     
     server.send(200, "text/html", htmlSuccess);
     
