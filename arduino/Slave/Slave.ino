@@ -4,18 +4,41 @@
 #include <EEPROM.h>
 #include <FS.h>
 
-const char* ssid = "ESP8266 Slave";
-const char* password = "123456789";
-String htmlRoot;
-String htmlSuccess;
-
+// EEPROM memory address
 unsigned int CONFIG_START = 1;
 unsigned int CONFIG_FLAG_START = 0;
 
-unsigned int MODE;
-
+// Reset push button
 unsigned int BUTTON_PIN = D1;
 unsigned bool BUTTON_PRESSED = false;
+
+// Wifi Config data
+struct ConfigStruct {
+  char deviceId[32];
+  char deviceName[32];
+  char ssid[32];
+  char senha[63];
+} wifiConfig;
+
+// Device modes
+enum MODES { 
+  CONFIG = 0,
+  SLAVE = 1
+};
+
+// Current device mode
+unsigned int MODE;
+
+// Device firmware type
+String TYPE = "Slave Default";
+
+// SSID and pass of the network config mode
+const char* ssid = "ESP8266 Slave";
+const char* password = "123456789";
+
+// HTML data for config mode
+String htmlRoot;
+String htmlSuccess;
 
 // Create an instance of UDP connection
 WiFiUDP UDP;
@@ -23,18 +46,6 @@ WiFiUDP UDP;
 // Create an instance of the server
 // specify the port to listen
 ESP8266WebServer server(80);
-
-// Wifi Config data
-struct ConfigStruct {
-  char deviceName[32];
-  char ssid[32];
-  char senha[63];
-} wifiConfig;
-
-enum MODES { 
-  CONFIG = 0,
-  SLAVE = 1
-};
 
 void setup() {
   // Init Serial for log data
@@ -45,6 +56,8 @@ void setup() {
   EEPROM.begin(512);
 
   MODE = EEPROM.read(CONFIG_FLAG_START);
+
+  loadConfig();
 
   if (MODE == MODES.SLAVE) {
     setupUDPSlave();
@@ -74,23 +87,33 @@ void loop() {
 }
 
 void handleRootGET() {
-    server.send(200, "text/html", htmlRoot);
+  server.send(200, "text/html", parseHTML(htmlRoot));
 }
 
 void handleRootPOST() {
-    String deviceName = server.arg("device-name");
-    String ssid       = server.arg("ssid");
-    String password   = server.arg("password");
-    
-    deviceName.toCharArray(wifiConfig.deviceName, 32);
-    ssid.toCharArray(wifiConfig.ssid, 32);
-    password.toCharArray(wifiConfig.password, 63);
+  String deviceName = server.arg("device-name");
+  String ssid       = server.arg("ssid");
+  String password   = server.arg("password");
+  
+  deviceName.toCharArray(wifiConfig.deviceName, 32);
+  ssid.toCharArray(wifiConfig.ssid, 32);
+  password.toCharArray(wifiConfig.password, 63);
 
-    saveConfig();
-    
-    server.send(200, "text/html", htmlSuccess);
-    
-    ESP.restart();
+  saveConfig();
+
+  server.send(200, "text/html", parseHTML(htmlSuccess));
+  
+  ESP.restart();
+}
+
+String parseHTML(String html){
+  html.replace("{{ device-type }}", TYPE);
+  html.replace("{{ device-id }}", wifiConfig.deviceId);
+  html.replace("{{ device-name }}", wifiConfig.deviceName);
+  html.replace("{{ ssid }}", wifiConfig.ssid);
+  html.replace("{{ password }}", wifiConfig.password);
+
+  return html;
 }
 
 void saveConfig() {
@@ -101,7 +124,7 @@ void saveConfig() {
   EEPROM.commit();
 }
 
-void loadConfig () {
+void loadConfig() {
     for (unsigned int t = 0; t < sizeof(wifiConfig); t++){
         *((char*)&wifiConfig + t) = EEPROM.read(CONFIG_START + t);
     }
