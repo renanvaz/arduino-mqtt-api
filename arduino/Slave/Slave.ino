@@ -17,7 +17,7 @@ struct ConfigStruct {
   char deviceId[32];
   char deviceName[32];
   char ssid[32];
-  char senha[63];
+  char password[63];
 } wifiConfig;
 
 // Device modes
