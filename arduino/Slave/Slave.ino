@@ -5,32 +5,28 @@
 #include <FS.h>
 
 // EEPROM memory address
-unsigned int CONFIG_START = 1;
-unsigned int CONFIG_FLAG_START = 0;
+unsigned int ADDRESS_CONFIG = 0;
+unsigned int EEPROM_SIZE = 512;
 
 // Reset push button
 unsigned int BUTTON_PIN = D1;
-unsigned bool BUTTON_PRESSED = false;
+bool BUTTON_PRESSED = false;
 
 // Wifi Config data
 struct ConfigStruct {
-  char deviceId[32];
-  char deviceName[32];
-  char ssid[32];
-  char password[63];
-} wifiConfig;
+  char deviceMode[2];
+  char deviceName[33];
+  char ssid[33];
+  char password[64];
+} Data;
 
-// Device modes
-enum MODES { 
-  CONFIG = 0,
-  SLAVE = 1
-};
-
-// Current device mode
-unsigned int MODE;
+// Modes
+String SLAVE = "1";
+String CONFIG = "0";
 
 // Device firmware type
 String TYPE = "Slave Default";
+String ID = "031d8494-9d53-4f2c-bd4c-72e5fc5b3080";
 
 // SSID and pass of the network config mode
 const char* ssid = "ESP8266 Slave";
@@ -53,21 +49,28 @@ void setup() {
   delay(10);
 
   // Init EEPROM for load connection saved data
-  EEPROM.begin(512);
+  EEPROM.begin(EEPROM_SIZE);
 
-  MODE = EEPROM.read(CONFIG_FLAG_START);
+  loadData();
 
-  loadConfig();
+  Serial.println("");
+  Serial.print("Device mode: ");
+  Serial.println(Data.deviceMode);
 
-  if (MODE == MODES.SLAVE) {
-    setupUDPSlave();
-  } else {
+  if (strcmp(Data.deviceMode, SLAVE.c_str()) == 0) {
+    Serial.println("equal to SLAVE");
+    setupModeSlave();
+  } else if (strcmp(Data.deviceMode, CONFIG.c_str()) == 0) {
+    Serial.println("equal to CONFIG");
     setupModeConfig();
+  } else {
+    Serial.println("not equal");
+    setupModeFormat();
   }
 }
 
 void loop() {
-  if (MODE == MODES.SLAVE) {
+  if (strcmp(Data.deviceMode, SLAVE.c_str()) == 0) {
       BUTTON_PRESSED = false;
     
       while(digitalRead(BUTTON_PIN) == HIGH) {
@@ -75,15 +78,28 @@ void loop() {
       }
 
       if (BUTTON_PRESSED) {
-        EEPROM.write(CONFIG_FLAG_START, 0);
-  
-        EEPROM.commit();
+        CONFIG.toCharArray(Data.deviceMode, 2);
+        saveData();
 
         ESP.restart();
       }
-  } else {
+  } else if (strcmp(Data.deviceMode, CONFIG.c_str()) == 0) {
     server.handleClient();
   }
+}
+
+void loadData() {
+  for (unsigned int t = 0; t < sizeof(Data); t++){
+      *((char*)&Data + t) = EEPROM.read(ADDRESS_CONFIG + t);
+  }
+}
+
+void saveData() {
+  for (unsigned int t = 0; t < sizeof(Data); t++) {
+    EEPROM.write(ADDRESS_CONFIG + t, *((char*)&Data + t));
+  }
+  
+  EEPROM.commit();
 }
 
 void handleRootGET() {
@@ -95,39 +111,26 @@ void handleRootPOST() {
   String ssid       = server.arg("ssid");
   String password   = server.arg("password");
   
-  deviceName.toCharArray(wifiConfig.deviceName, 32);
-  ssid.toCharArray(wifiConfig.ssid, 32);
-  password.toCharArray(wifiConfig.password, 63);
+  deviceName.toCharArray(Data.deviceName, 33);
+  ssid.toCharArray(Data.ssid, 33);
+  password.toCharArray(Data.password, 64);
+  SLAVE.toCharArray(Data.deviceMode, 2);
 
-  saveConfig();
+  saveData();
 
   server.send(200, "text/html", parseHTML(htmlSuccess));
   
   ESP.restart();
 }
 
-String parseHTML(String html){
+String parseHTML(String html) {
   html.replace("{{ device-type }}", TYPE);
-  html.replace("{{ device-id }}", wifiConfig.deviceId);
-  html.replace("{{ device-name }}", wifiConfig.deviceName);
-  html.replace("{{ ssid }}", wifiConfig.ssid);
-  html.replace("{{ password }}", wifiConfig.password);
+  html.replace("{{ device-id }}", ID);
+  html.replace("{{ device-name }}", Data.deviceName);
+  html.replace("{{ ssid }}", Data.ssid);
+  html.replace("{{ password }}", Data.password);
 
   return html;
-}
-
-void saveConfig() {
-  for (unsigned int t = 0; t < sizeof(wifiConfig); t++) {
-    EEPROM.write(CONFIG_START + t, *((char*)&wifiConfig + t));
-  }
-  
-  EEPROM.commit();
-}
-
-void loadConfig() {
-    for (unsigned int t = 0; t < sizeof(wifiConfig); t++){
-        *((char*)&wifiConfig + t) = EEPROM.read(CONFIG_START + t);
-    }
 }
 
 void setupModeConfig() {
@@ -139,6 +142,7 @@ void setupModeConfig() {
   File fileSuccess = SPIFFS.open("/success.html", "r");
 
   Serial.println();
+  Serial.println("setupModeConfig");
   Serial.println();
   
   if (fileIndex) {
@@ -182,7 +186,36 @@ void setupModeConfig() {
   Serial.println("Server started");
 }
 
-void setupUDPSlave() {
+void setupModeSlave() {
+  Serial.println();
+  Serial.println("setupModeConfig");
+  Serial.println();
+
+  EEPROM.end();
+  
   pinMode(BUTTON_PIN, INPUT);
+}
+
+void setupModeFormat() {
+  Serial.println();
+  Serial.println("setupModeFormat");
+  Serial.println();
+
+  Serial.println("Formating EEPROM...");
+
+  for (unsigned int t = 0; t < EEPROM_SIZE; t++) {
+    EEPROM.write(t, NULL);
+  }
+
+  // Serial.println("Formating SPIFFS...");
+  // SPIFFS.begin();
+  // SPIFFS.format();
+
+  Serial.println("Saving default Data...");
+  CONFIG.toCharArray(Data.deviceMode, 2);
+  saveData();
+
+  Serial.println("Restarting...");
+  ESP.restart();
 }
 
