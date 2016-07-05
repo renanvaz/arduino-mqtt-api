@@ -78,6 +78,7 @@ void loop() {
       }
 
       if (BUTTON_PRESSED) {
+        Serial.println("BUTTON_PRESSED");
         CONFIG.toCharArray(Data.deviceMode, 2);
         saveData();
 
@@ -188,7 +189,7 @@ void setupModeConfig() {
 
 void setupModeSlave() {
   Serial.println();
-  Serial.println("setupModeConfig");
+  Serial.println("setupModeSlave");
   Serial.println();
 
   EEPROM.end();
