@@ -23,6 +23,7 @@ struct ConfigStruct {
 // Modes
 String SLAVE = "1";
 String CONFIG = "0";
+String MODE;
 
 // Device firmware type
 String TYPE = "Slave Default";
@@ -48,20 +49,22 @@ void setup() {
   Serial.begin(115200);
   delay(10);
 
-  // Init EEPROM for load connection saved data
-  EEPROM.begin(EEPROM_SIZE);
-
   loadData();
 
   Serial.println("");
   Serial.print("Device mode: ");
   Serial.println(Data.deviceMode);
 
+  Serial.print("Device name: ");
+  Serial.println(Data.deviceName);
+
   if (strcmp(Data.deviceMode, SLAVE.c_str()) == 0) {
     Serial.println("equal to SLAVE");
+    MODE = SLAVE;
     setupModeSlave();
   } else if (strcmp(Data.deviceMode, CONFIG.c_str()) == 0) {
     Serial.println("equal to CONFIG");
+    MODE = CONFIG;
     setupModeConfig();
   } else {
     Serial.println("not equal");
@@ -70,37 +73,59 @@ void setup() {
 }
 
 void loop() {
-  if (strcmp(Data.deviceMode, SLAVE.c_str()) == 0) {
+  if (MODE == SLAVE) {
       BUTTON_PRESSED = false;
     
       while(digitalRead(BUTTON_PIN) == HIGH) {
          BUTTON_PRESSED = true;
+
+         delay(10);
       }
 
       if (BUTTON_PRESSED) {
         Serial.println("BUTTON_PRESSED");
         CONFIG.toCharArray(Data.deviceMode, 2);
         saveData();
-
-        ESP.restart();
+        
+        Serial.print("Device mode: ");
+        Serial.println(Data.deviceMode);
+        
+        Serial.println("Restarting...");
+        //ESP.restart();
       }
-  } else if (strcmp(Data.deviceMode, CONFIG.c_str()) == 0) {
+  } else if (MODE == CONFIG) {
     server.handleClient();
   }
 }
 
 void loadData() {
-  for (unsigned int t = 0; t < sizeof(Data); t++){
-      *((char*)&Data + t) = EEPROM.read(ADDRESS_CONFIG + t);
+  EEPROM.begin(EEPROM_SIZE);
+  
+  for (unsigned int t = 0, l = sizeof(Data); t < l; t++){
+    *((char*)&Data + t) = EEPROM.read(ADDRESS_CONFIG + t);
   }
+
+  EEPROM.end();
 }
 
 void saveData() {
-  for (unsigned int t = 0; t < sizeof(Data); t++) {
+  EEPROM.begin(EEPROM_SIZE);
+  
+  for (unsigned int t = 0, l = sizeof(Data); t < l; t++){
     EEPROM.write(ADDRESS_CONFIG + t, *((char*)&Data + t));
   }
   
-  EEPROM.commit();
+  EEPROM.end();
+}
+
+void clearData() {
+  EEPROM.begin(EEPROM_SIZE);
+
+  for (unsigned int t = 0; t < EEPROM_SIZE; t++) {
+    EEPROM.write(t, NULL);
+  }
+
+  EEPROM.end();
 }
 
 void handleRootGET() {
@@ -191,8 +216,6 @@ void setupModeSlave() {
   Serial.println();
   Serial.println("setupModeSlave");
   Serial.println();
-
-  EEPROM.end();
   
   pinMode(BUTTON_PIN, INPUT);
 }
@@ -203,14 +226,7 @@ void setupModeFormat() {
   Serial.println();
 
   Serial.println("Formating EEPROM...");
-
-  for (unsigned int t = 0; t < EEPROM_SIZE; t++) {
-    EEPROM.write(t, NULL);
-  }
-
-  // Serial.println("Formating SPIFFS...");
-  // SPIFFS.begin();
-  // SPIFFS.format();
+  clearData();
 
   Serial.println("Saving default Data...");
   CONFIG.toCharArray(Data.deviceMode, 2);
