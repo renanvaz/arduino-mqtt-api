@@ -8,9 +8,10 @@
 unsigned int ADDRESS_CONFIG = 0;
 unsigned int EEPROM_SIZE = 512;
 
+unsigned int i, l;
+
 // Reset push button
 unsigned int BUTTON_PIN = D1;
-bool BUTTON_PRESSED = false;
 
 // Wifi Config data
 struct ConfigStruct {
@@ -39,6 +40,7 @@ String htmlSuccess;
 
 // Create an instance of UDP connection
 WiFiUDP UDP;
+int packetSize;
 
 // Create an instance of the server
 // specify the port to listen
@@ -74,25 +76,42 @@ void setup() {
 
 void loop() {
   if (MODE == SLAVE) {
-      BUTTON_PRESSED = false;
-    
-      while(digitalRead(BUTTON_PIN) == HIGH) {
-         BUTTON_PRESSED = true;
-
-         delay(10);
+    // If button is pressed
+    if (digitalRead(BUTTON_PIN) == HIGH) {
+      while (digitalRead(BUTTON_PIN) == HIGH) {
+         delay(100);
       }
 
-      if (BUTTON_PRESSED) {
-        Serial.println("BUTTON_PRESSED");
-        CONFIG.toCharArray(Data.deviceMode, 2);
-        saveData();
-        
-        Serial.print("Device mode: ");
-        Serial.println(Data.deviceMode);
-        
-        Serial.println("Restarting...");
-        //ESP.restart();
-      }
+      Serial.println("BUTTON_PRESSED");
+      CONFIG.toCharArray(Data.deviceMode, 2);
+      saveData();
+      
+      Serial.print("Device mode: ");
+      Serial.println(Data.deviceMode);
+      
+      Serial.println("Restarting...");
+      ESP.restart();
+    } else {
+      packetSize = UDP.parsePacket();
+
+      if (packetSize) {
+        Serial.println("");
+        Serial.print("Received packet of size ");
+        Serial.println(packetSize);
+        Serial.print("From ");
+        IPAddress remote = UDP.remoteIP();
+  
+        for (i = 0; i < 4; i++) {
+          Serial.print(remote[i], DEC);
+  
+          if (i < 3) {
+            Serial.print(".");
+          }
+        }
+  
+        Serial.print(", port ");
+        Serial.println(UDP.remotePort()); 
+    }
   } else if (MODE == CONFIG) {
     server.handleClient();
   }
@@ -101,8 +120,8 @@ void loop() {
 void loadData() {
   EEPROM.begin(EEPROM_SIZE);
   
-  for (unsigned int t = 0, l = sizeof(Data); t < l; t++){
-    *((char*)&Data + t) = EEPROM.read(ADDRESS_CONFIG + t);
+  for (i = 0, l = sizeof(Data); i < l; i++){
+    *((char*)&Data + i) = EEPROM.read(ADDRESS_CONFIG + i);
   }
 
   EEPROM.end();
@@ -111,8 +130,8 @@ void loadData() {
 void saveData() {
   EEPROM.begin(EEPROM_SIZE);
   
-  for (unsigned int t = 0, l = sizeof(Data); t < l; t++){
-    EEPROM.write(ADDRESS_CONFIG + t, *((char*)&Data + t));
+  for (i = 0, l = sizeof(Data); i < l; i++){
+    EEPROM.write(ADDRESS_CONFIG + i, *((char*)&Data + i));
   }
   
   EEPROM.end();
@@ -121,8 +140,8 @@ void saveData() {
 void clearData() {
   EEPROM.begin(EEPROM_SIZE);
 
-  for (unsigned int t = 0; t < EEPROM_SIZE; t++) {
-    EEPROM.write(t, NULL);
+  for (i = 0; i < EEPROM_SIZE; i++) {
+    EEPROM.write(i, NULL);
   }
 
   EEPROM.end();
@@ -216,8 +235,26 @@ void setupModeSlave() {
   Serial.println();
   Serial.println("setupModeSlave");
   Serial.println();
-  
+
+  // Setup button reset to config mode pin
   pinMode(BUTTON_PIN, INPUT);
+
+  WiFi.begin(Data.ssid, Data.password);
+  
+  // Wait for connection
+  Serial.println("");
+  Serial.print("Connecting to WiFi...");
+
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+
+  Serial.println("");
+  Serial.print("Connected to ");
+  Serial.println(Data.ssid);
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 }
 
 void setupModeFormat() {
@@ -226,7 +263,7 @@ void setupModeFormat() {
   Serial.println();
 
   Serial.println("Formating EEPROM...");
-  clearData();
+  clearData(); 
 
   Serial.println("Saving default Data...");
   CONFIG.toCharArray(Data.deviceMode, 2);
