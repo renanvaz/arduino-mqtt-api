@@ -12,22 +12,26 @@ fn _callbackFunctions[];
 
 
 //
-String stringBuffer = String(packetBuffer);
+String stringBuffer = "teste:param1|param2|param3";
 
 int topicDivisor = stringBuffer.indexOf(':');
-string topic = stringBuffer.substring(0, topicDivisor);
-string sParams = stringBuffer.substring(topicDivisor);
+String topic = stringBuffer.substring(0, topicDivisor);
+String sParams = stringBuffer.substring(topicDivisor);
 
-string params[];
-int lastFound = 0;
+String params[5];
+int lastFound = 1;
+int index = 0;
 
-for (i = 0, l = sParams.length(); i < l; i++) {
+for (int i = 0, l = sParams.length(); i < l; i++) {
   if (sParams[i] == '|') {
-    params[] = sParams.substring(lastFound, i);
+    params[index] = sParams.substring(lastFound, i);
 
-    lastFound = i;
+    index++;
+    lastFound = i+1;
   }
 }
+
+params[index] = sParams.substring(lastFound);
 
 
 // EEPROM memory address
@@ -122,10 +126,10 @@ void loopSlave() {
     Serial.println("BUTTON_PRESSED");
     CONFIG.toCharArray(Data.deviceMode, 2);
     saveData();
-    
+
     Serial.print("Device mode: ");
     Serial.println(Data.deviceMode);
-    
+
     Serial.println("Restarting...");
     ESP.restart();
   } else {
@@ -147,7 +151,7 @@ void loopSlave() {
       }
 
       Serial.print(", port ");
-      Serial.println(UDP.remotePort()); 
+      Serial.println(UDP.remotePort());
   }
 }
 
@@ -158,7 +162,7 @@ void on(String eventName, fn callback) {
 
 void loadData() {
   EEPROM.begin(EEPROM_SIZE);
-  
+
   for (i = 0, l = sizeof(Data); i < l; i++){
     *((char*)&Data + i) = EEPROM.read(ADDRESS_CONFIG + i);
   }
@@ -168,11 +172,11 @@ void loadData() {
 
 void saveData() {
   EEPROM.begin(EEPROM_SIZE);
-  
+
   for (i = 0, l = sizeof(Data); i < l; i++){
     EEPROM.write(ADDRESS_CONFIG + i, *((char*)&Data + i));
   }
-  
+
   EEPROM.end();
 }
 
@@ -194,7 +198,7 @@ void handleRootPOST() {
   String deviceName = server.arg("device-name");
   String ssid       = server.arg("ssid");
   String password   = server.arg("password");
-  
+
   deviceName.toCharArray(Data.deviceName, 33);
   ssid.toCharArray(Data.ssid, 33);
   password.toCharArray(Data.password, 64);
@@ -203,7 +207,7 @@ void handleRootPOST() {
   saveData();
 
   server.send(200, "text/html", parseHTML(htmlSuccess));
-  
+
   ESP.restart();
 }
 
@@ -220,7 +224,7 @@ String parseHTML(String html) {
 void setupModeConfig() {
   // Init SPIFFS for load the index.html file
   SPIFFS.begin();
-  
+
   // HTML da pagina principal
   File fileIndex = SPIFFS.open("/index.html", "r");
   File fileSuccess = SPIFFS.open("/success.html", "r");
@@ -228,7 +232,7 @@ void setupModeConfig() {
   Serial.println();
   Serial.println("setupModeConfig");
   Serial.println();
-  
+
   if (fileIndex) {
     htmlRoot = fileIndex.readString();
     Serial.println("Success on load \"index.html\" file");
@@ -242,7 +246,7 @@ void setupModeConfig() {
   } else {
     Serial.println("ERROR on loading \"success.html\" file");
   }
-  
+
   delay(10);
 
   // Creating a WiFi network
@@ -258,7 +262,7 @@ void setupModeConfig() {
   Serial.println(password);
   Serial.println(WiFi.softAPIP());
   WiFi.printDiag(Serial);
-  
+
   // Start the server
   server.on("/", HTTP_GET, handleRootGET);
   server.on("/", HTTP_POST, handleRootPOST);
@@ -279,7 +283,7 @@ void setupModeSlave() {
   pinMode(BUTTON_PIN, INPUT);
 
   WiFi.begin(Data.ssid, Data.password);
-  
+
   // Wait for connection
   Serial.println("");
   Serial.print("Connecting to WiFi...");
@@ -302,7 +306,7 @@ void setupModeFormat() {
   Serial.println();
 
   Serial.println("Formating EEPROM...");
-  clearData(); 
+  clearData();
 
   Serial.println("Saving default Data...");
   CONFIG.toCharArray(Data.deviceMode, 2);
