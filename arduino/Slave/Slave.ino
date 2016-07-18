@@ -4,6 +4,32 @@
 #include <EEPROM.h>
 #include <FS.h>
 
+// Callbacks
+typedef void(*fn)();
+
+string _callbackNames[];
+fn _callbackFunctions[];
+
+
+//
+String stringBuffer = String(packetBuffer);
+
+int topicDivisor = stringBuffer.indexOf(':');
+string topic = stringBuffer.substring(0, topicDivisor);
+string sParams = stringBuffer.substring(topicDivisor);
+
+string params[];
+int lastFound = 0;
+
+for (i = 0, l = sParams.length(); i < l; i++) {
+  if (sParams[i] == '|') {
+    params[] = sParams.substring(lastFound, i);
+
+    lastFound = i;
+  }
+}
+
+
 // EEPROM memory address
 unsigned int ADDRESS_CONFIG = 0;
 unsigned int EEPROM_SIZE = 512;
@@ -76,45 +102,58 @@ void setup() {
 
 void loop() {
   if (MODE == SLAVE) {
-    // If button is pressed
-    if (digitalRead(BUTTON_PIN) == HIGH) {
-      while (digitalRead(BUTTON_PIN) == HIGH) {
-         delay(100);
+    loopSlave();
+  } else if (MODE == CONFIG) {
+    loopConfig();
+  }
+}
+
+void loopConfig() {
+  server.handleClient();
+}
+
+void loopSlave() {
+  // If button is pressed
+  if (digitalRead(BUTTON_PIN) == HIGH) {
+    while (digitalRead(BUTTON_PIN) == HIGH) {
+       delay(100);
+    }
+
+    Serial.println("BUTTON_PRESSED");
+    CONFIG.toCharArray(Data.deviceMode, 2);
+    saveData();
+    
+    Serial.print("Device mode: ");
+    Serial.println(Data.deviceMode);
+    
+    Serial.println("Restarting...");
+    ESP.restart();
+  } else {
+    packetSize = UDP.parsePacket();
+
+    if (packetSize) {
+      Serial.println("");
+      Serial.print("Received packet of size ");
+      Serial.println(packetSize);
+      Serial.print("From ");
+      IPAddress remote = UDP.remoteIP();
+
+      for (i = 0; i < 4; i++) {
+        Serial.print(remote[i], DEC);
+
+        if (i < 3) {
+          Serial.print(".");
+        }
       }
 
-      Serial.println("BUTTON_PRESSED");
-      CONFIG.toCharArray(Data.deviceMode, 2);
-      saveData();
-      
-      Serial.print("Device mode: ");
-      Serial.println(Data.deviceMode);
-      
-      Serial.println("Restarting...");
-      ESP.restart();
-    } else {
-      packetSize = UDP.parsePacket();
-
-      if (packetSize) {
-        Serial.println("");
-        Serial.print("Received packet of size ");
-        Serial.println(packetSize);
-        Serial.print("From ");
-        IPAddress remote = UDP.remoteIP();
-  
-        for (i = 0; i < 4; i++) {
-          Serial.print(remote[i], DEC);
-  
-          if (i < 3) {
-            Serial.print(".");
-          }
-        }
-  
-        Serial.print(", port ");
-        Serial.println(UDP.remotePort()); 
-    }
-  } else if (MODE == CONFIG) {
-    server.handleClient();
+      Serial.print(", port ");
+      Serial.println(UDP.remotePort()); 
   }
+}
+
+void on(String eventName, fn callback) {
+  _callbackNames[] = eventName;
+  _callbackFunctions[] = callback;
 }
 
 void loadData() {
