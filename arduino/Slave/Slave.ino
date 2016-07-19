@@ -113,44 +113,44 @@ void loopSlave() {
   } else {
     if (false) {
       packetSize = UDP.parsePacket();
-  
+
       if (packetSize) {
         Serial.println("");
         Serial.print("Received packet of size ");
         Serial.println(packetSize);
         Serial.print("From ");
         IPAddress remote = UDP.remoteIP();
-  
+
         for (i = 0; i < 4; i++) {
           Serial.print(remote[i], DEC);
-  
+
           if (i < 3) {
             Serial.print(".");
           }
         }
-  
+
         Serial.print(", port ");
         Serial.println(UDP.remotePort());
-  
+
         String stringBuffer = "teste:param1|param2|param3";
-  
+
         int topicDivisor = stringBuffer.indexOf(':');
         String topic = stringBuffer.substring(0, topicDivisor);
         String sParams = stringBuffer.substring(topicDivisor);
-        
+
         String params[5];
         int lastFound = 1;
         int index = 0;
-        
+
         for (int i = 0, l = sParams.length(); i < l; i++) {
           if (sParams[i] == '|') {
             params[index] = sParams.substring(lastFound, i);
-        
+
             index++;
             lastFound = i+1;
           }
         }
-        
+
         params[index] = sParams.substring(lastFound);
       }
     }
@@ -161,7 +161,7 @@ void on(String eventName, fn callback) {
   if (_callbackIndex < _maxCallbacks) {
     _callbackNames[_callbackIndex] = eventName;
     _callbackFunctions[_callbackIndex] = callback;
-  
+
     _callbackIndex++;
   } else {
     Serial.print("The callbacks limit has been reached: ");
@@ -287,7 +287,7 @@ void setupModeSlave() {
   bool error = false;
   int connectionTries = 0;
   int maxConnectionTries = 20;
-  
+
   Serial.println();
   Serial.println("setupModeSlave");
   Serial.println();
@@ -321,7 +321,7 @@ void setupModeSlave() {
     Serial.println("Connection failure... Restarting in mode CONFIG...");
     CONFIG.toCharArray(Data.deviceMode, 2);
     saveData();
-    
+
     ESP.restart();
   }
 }
