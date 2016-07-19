@@ -7,7 +7,7 @@
 // Callbacks
 typedef void(*fn)();
 
-string _callbackNames[];
+String _callbackNames[];
 fn _callbackFunctions[];
 
 
