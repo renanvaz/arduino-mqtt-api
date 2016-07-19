@@ -7,32 +7,10 @@
 // Callbacks
 typedef void(*fn)();
 
-string _callbackNames[];
-fn _callbackFunctions[];
-
-
-//
-String stringBuffer = "teste:param1|param2|param3";
-
-int topicDivisor = stringBuffer.indexOf(':');
-String topic = stringBuffer.substring(0, topicDivisor);
-String sParams = stringBuffer.substring(topicDivisor);
-
-String params[5];
-int lastFound = 1;
-int index = 0;
-
-for (int i = 0, l = sParams.length(); i < l; i++) {
-  if (sParams[i] == '|') {
-    params[index] = sParams.substring(lastFound, i);
-
-    index++;
-    lastFound = i+1;
-  }
-}
-
-params[index] = sParams.substring(lastFound);
-
+const int _maxCallbacks = 0;
+int _callbackIndex = 0;
+String _callbackNames[_maxCallbacks];
+fn _callbackFunctions[_maxCallbacks];
 
 // EEPROM memory address
 unsigned int ADDRESS_CONFIG = 0;
@@ -133,31 +111,62 @@ void loopSlave() {
     Serial.println("Restarting...");
     ESP.restart();
   } else {
-    packetSize = UDP.parsePacket();
-
-    if (packetSize) {
-      Serial.println("");
-      Serial.print("Received packet of size ");
-      Serial.println(packetSize);
-      Serial.print("From ");
-      IPAddress remote = UDP.remoteIP();
-
-      for (i = 0; i < 4; i++) {
-        Serial.print(remote[i], DEC);
-
-        if (i < 3) {
-          Serial.print(".");
+    if (false) {
+      packetSize = UDP.parsePacket();
+  
+      if (packetSize) {
+        Serial.println("");
+        Serial.print("Received packet of size ");
+        Serial.println(packetSize);
+        Serial.print("From ");
+        IPAddress remote = UDP.remoteIP();
+  
+        for (i = 0; i < 4; i++) {
+          Serial.print(remote[i], DEC);
+  
+          if (i < 3) {
+            Serial.print(".");
+          }
         }
+  
+        Serial.print(", port ");
+        Serial.println(UDP.remotePort());
+  
+        String stringBuffer = "teste:param1|param2|param3";
+  
+        int topicDivisor = stringBuffer.indexOf(':');
+        String topic = stringBuffer.substring(0, topicDivisor);
+        String sParams = stringBuffer.substring(topicDivisor);
+        
+        String params[5];
+        int lastFound = 1;
+        int index = 0;
+        
+        for (int i = 0, l = sParams.length(); i < l; i++) {
+          if (sParams[i] == '|') {
+            params[index] = sParams.substring(lastFound, i);
+        
+            index++;
+            lastFound = i+1;
+          }
+        }
+        
+        params[index] = sParams.substring(lastFound);
       }
-
-      Serial.print(", port ");
-      Serial.println(UDP.remotePort());
+    }
   }
 }
 
 void on(String eventName, fn callback) {
-  _callbackNames[] = eventName;
-  _callbackFunctions[] = callback;
+  if (_callbackIndex < _maxCallbacks) {
+    _callbackNames[_callbackIndex] = eventName;
+    _callbackFunctions[_callbackIndex] = callback;
+  
+    _callbackIndex++;
+  } else {
+    Serial.print("The callbacks limit has been reached: ");
+    Serial.print(_maxCallbacks);
+  }
 }
 
 void loadData() {
@@ -275,6 +284,10 @@ void setupModeConfig() {
 }
 
 void setupModeSlave() {
+  bool error = false;
+  int connectionTries = 0;
+  int maxConnectionTries = 20;
+  
   Serial.println();
   Serial.println("setupModeSlave");
   Serial.println();
@@ -289,15 +302,28 @@ void setupModeSlave() {
   Serial.print("Connecting to WiFi...");
 
   while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
-    delay(500);
+    if (connectionTries++ < maxConnectionTries) {
+      Serial.print(".");
+      delay(500);
+    } else {
+      error = true;
+      break;
+    }
   }
 
-  Serial.println("");
-  Serial.print("Connected to ");
-  Serial.println(Data.ssid);
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+  if (!error) {
+    Serial.println("");
+    Serial.print("Connected to ");
+    Serial.println(Data.ssid);
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("Connection failure... Restarting in mode CONFIG...");
+    CONFIG.toCharArray(Data.deviceMode, 2);
+    saveData();
+    
+    ESP.restart();
+  }
 }
 
 void setupModeFormat() {
