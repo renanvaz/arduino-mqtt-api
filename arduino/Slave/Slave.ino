@@ -69,15 +69,12 @@ void setup() {
   Serial.println(Data.deviceName);
 
   if (strcmp(Data.deviceMode, SLAVE.c_str()) == 0) {
-    Serial.println("equal to SLAVE");
     MODE = SLAVE;
     setupModeSlave();
   } else if (strcmp(Data.deviceMode, CONFIG.c_str()) == 0) {
-    Serial.println("equal to CONFIG");
     MODE = CONFIG;
     setupModeConfig();
   } else {
-    Serial.println("not equal");
     setupModeFormat();
   }
 }
