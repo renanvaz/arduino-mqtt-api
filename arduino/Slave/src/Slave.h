@@ -6,65 +6,77 @@
 #ifndef Slave_h
 #define Slave_h
 
+#define SLAVE "1"
+#define CONFIG "0"
+#define MAX_CALLBACKS 100
+
+typedef void(*fn)();
+
+class WiFiUDP;
+class ESP8266WebServer;
+
+struct Config
+{
+  char deviceMode[2];
+  char deviceName[33];
+  char ssid[33];
+  char password[64];
+};
+
+
 class Slave
 {
   public:
     Slave(String type, String id);
 
+    unsigned int BUTTON_PIN;
+    String MODE;
+
     void debug(HardwareSerial &logger);
     void setup();
     void loop();
     void on(String eventName, fn callback);
+    void setAPData(const char* ssid, const char* password);
 
     String getMode();
     String getType();
     String getID();
 
   private:
-    // EEPROM memory address
-    const unsigned int _ADDRESS_CONFIG;
-    const unsigned int _EEPROM_SIZE;
+    unsigned int i, l;
 
-    // Reset push button
-    const unsigned int _BUTTON_PIN;
+    int _callbackIndex = 0;
+    String _callbackNames[MAX_CALLBACKS];
+    fn _callbackFunctions[MAX_CALLBACKS];
+
+    // EEPROM memory address
+    const unsigned int _ADDRESS_CONFIG = 0;
+    const unsigned int _EEPROM_SIZE = 512;
+
+    // Access point info
+    const char* _ap_ssid = "Slave ESP8266";
+    const char* _ap_password = "123456789";
 
     // Logger
-    HardwareSerial* _logger;
+    HardwareSerial *_logger;
 
     // HTML data for config mode
     String _htmlRoot;
     String _htmlSuccess;
 
-    unsigned int i, l;
-
-
     // Wifi Config data
-    struct Config
-    {
-      char deviceMode[2];
-      char deviceName[33];
-      char ssid[33];
-      char password[64];
-    };
-
-    Config _Data;
-
-    // Modes
-    String SLAVE;
-    String CONFIG;
-    String _mode;
+    Config _data;
 
     // Device info
     String _type;
     String _id;
 
     // Create an instance of UDP connection
-    WiFiUDP UDP;
-    int packetSize;
+    WiFiUDP *_udp;
 
     // Create an instance of the server
     // specify the port to listen
-    ESP8266WebServer server;
+    ESP8266WebServer *_server;
 
     // Methods
     void _setupModeConfig();
@@ -80,6 +92,8 @@ class Slave
 
     void _handleRootGET();
     void _handleRootPOST();
+
+    void _log(String text);
 
     String _parseHTML(String html);
 };
