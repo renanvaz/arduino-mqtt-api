@@ -11,9 +11,9 @@ void setup() {
   Serial.begin(115200);
   delay(10);
 
-  Slave.BUTTON_PIN = D1;
+  slave.BUTTON_PIN = D1;
 
-  slave.setApData("ESP8266 Slave", "123456789");
+  slave.setAPData("ESP8266 Slave", "123456789");
   slave.debug(Serial);
   slave.setup();
 

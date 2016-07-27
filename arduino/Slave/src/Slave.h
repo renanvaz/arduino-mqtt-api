@@ -23,11 +23,11 @@ struct Config
   char password[64];
 };
 
-
 class Slave
 {
   public:
     Slave(String type, String id);
+    ~Slave();
 
     unsigned int BUTTON_PIN;
     String MODE;
@@ -36,7 +36,7 @@ class Slave
     void setup();
     void loop();
     void on(String eventName, fn callback);
-    void setAPData(const char* ssid, const char* password);
+    void setAPData(String ssid, String password);
 
     String getMode();
     String getType();
@@ -54,8 +54,8 @@ class Slave
     const unsigned int _EEPROM_SIZE = 512;
 
     // Access point info
-    const char* _ap_ssid = "Slave ESP8266";
-    const char* _ap_password = "123456789";
+    String _ap_ssid = "Slave ESP8266";
+    String _ap_password = "123456789";
 
     // Logger
     HardwareSerial *_logger;
@@ -74,10 +74,6 @@ class Slave
     // Create an instance of UDP connection
     WiFiUDP *_udp;
 
-    // Create an instance of the server
-    // specify the port to listen
-    ESP8266WebServer *_server;
-
     // Methods
     void _setupModeConfig();
     void _setupModeSlave();
@@ -92,8 +88,6 @@ class Slave
 
     void _handleRootGET();
     void _handleRootPOST();
-
-    void _log(String text);
 
     String _parseHTML(String html);
 };
