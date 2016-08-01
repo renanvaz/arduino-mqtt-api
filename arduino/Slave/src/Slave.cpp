@@ -181,7 +181,7 @@ void Slave::_setupModeSlave()
 
     if (!error) {
       _logger->println("UDP Connection successful");
-      _send("hi");
+      _send("hi", "");
     } else {
       _logger->println("UDP Connection failed");
     }
@@ -284,13 +284,18 @@ void Slave::_loopUDP()
   }
 }
 
-void Slave::_send(const char* message)
+void Slave::_send(const char* topic, const char* value)
 {
   IPAddress remoteIP(192, 168, 15, 10);
   int remotePort = 4123;
 
+  String message = "";
+  message += topic;
+  message += ":";
+  message += value;
+
   Udp.beginPacket(remoteIP, remotePort);
-  Udp.write(message);
+  Udp.write(message.c_str());
   Udp.endPacket();
 }
 

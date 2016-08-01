@@ -91,7 +91,7 @@ class Slave
     void _onPressReset();
     void _loopUDP();
 
-    void _send(const char* message);
+    void _send(const char* topic, const char* value);
 
     String _parseHTML(String html);
 };

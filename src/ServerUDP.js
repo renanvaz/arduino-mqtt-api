@@ -48,7 +48,7 @@ export default class Server extends EventEmitter {
                 topic = data[1],
                 params = data[2].split('|');
 
-            if (data[1] == 'hi') {
+            if (topic == 'hi') {
                 let client = new ServerClient(this, rinfo.port, rinfo.address);
                 this._clients[rinfo.address+':'+rinfo.port] = client;
                 this.emit('client', client);
@@ -84,6 +84,8 @@ export default class Server extends EventEmitter {
     send(client, topic, ...message) {
         let d = Q.defer(),
             buffer = new Buffer(topic+':'+message.join('|'));
+
+        console.log(client);
 
         this.socket.send(buffer, 0, buffer.length, client.port, client.host, (err) => {
             if (err) d.reject(err);

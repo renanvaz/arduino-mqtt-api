@@ -6,7 +6,7 @@ let s = new Server(4123);
 s.on('client', (client) => {
     console.log('new client');
 
-    let b = new Board(s, client);
+    let b = new Board(client);
 
     // console.time('dbsave');
     // b.digitalRead(10).then((message) => {

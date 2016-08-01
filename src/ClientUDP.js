@@ -3,8 +3,11 @@ import dgram from 'dgram';
 import Q from 'q';
 
 export default class Client extends EventEmitter {
-    constructor() {
+    constructor(port, host) {
         super();
+
+        this.port = port;
+        this.host = host;
 
         this.socket = dgram.createSocket('udp4');
 
