@@ -11,16 +11,23 @@ void setup() {
   Serial.begin(115200);
   delay(10);
 
-  slave.BUTTON_PIN = D1;
+  slave.RESET_BUTTON_PIN = D1;
 
   slave.setAPData("ESP8266 Slave", "123456789");
   slave.debug(Serial);
   slave.setup();
 
   if (slave.MODE == SLAVE) {
-    //slave.on("teste", function(){
-      //Serial.println("Event teste");
-    //});
+    Serial.println("DEBUG: slave.MODE == SLAVE");
+
+    slave.on("teste", [](String *params){
+      Serial.println("Event teste");
+      Serial.println(params[0]);
+    });
+  }
+
+  if (slave.MODE == CONFIG) {
+    Serial.println("DEBUG: slave.MODE == CONFIG");
   }
 }
 
