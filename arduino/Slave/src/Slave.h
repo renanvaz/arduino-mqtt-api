@@ -10,7 +10,7 @@
 #define CONFIG "0"
 #define MAX_CALLBACKS 100
 
-typedef void(*fn)(String *params);
+typedef void (*fn)(String *params);
 
 struct Config
 {
@@ -23,21 +23,20 @@ struct Config
 class Slave
 {
   public:
-    Slave(String type, String id);
+    Slave(const char* id, const char* type, const char* version);
     ~Slave();
 
     unsigned int RESET_BUTTON_PIN;
-    const char* MODE;
 
     void debug(HardwareSerial &logger);
     void setup();
     void loop();
     void on(const char* eventName, fn callback);
     void setAPData(String ssid, String password);
+    void sendUDP(const char* topic, const char* value);
 
-    String getMode();
-    String getType();
-    String getID();
+    bool isConfigMode();
+    bool isSlaveMode();
 
   private:
     unsigned int i, l;
@@ -65,8 +64,9 @@ class Slave
     Config _data;
 
     // Device info
-    String _type;
-    String _id;
+    const char* _type;
+    const char* _id;
+    const char* _version;
 
     // UDP packet buffer
     char _packetBuffer[512]; // UDP_TX_PACKET_MAX_SIZE is too large: 8192
@@ -79,6 +79,7 @@ class Slave
     void _loopModeConfig();
     void _loopModeSlave();
 
+    // void _trigger(const char* eventName);
     void _trigger(const char* eventName, String *params);
 
     void _loadData();
@@ -90,8 +91,6 @@ class Slave
 
     void _onPressReset();
     void _loopUDP();
-
-    void _send(const char* topic, const char* value);
 
     String _parseHTML(String html);
 };

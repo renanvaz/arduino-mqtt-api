@@ -17,10 +17,11 @@
 ESP8266WebServer server(80);
 WiFiUDP Udp;
 
-Slave::Slave(String type, String id)
+Slave::Slave(const char* id, const char* type, const char* version)
 {
-  _type = type;
   _id = id;
+  _type = type;
+  _version = version;
 }
 
 Slave::~Slave()
@@ -39,11 +40,9 @@ void Slave::setup()
   _logger->println("Mode:");
   _logger->println(_data.deviceMode);
 
-  if (strcmp(_data.deviceMode, SLAVE) == 0) {
-    MODE = SLAVE;
+  if (isSlaveMode()) {
     _setupModeSlave();
-  } else if (strcmp(_data.deviceMode, CONFIG) == 0) {
-    MODE = CONFIG;
+  } else if (isConfigMode()) {
     _setupModeConfig();
   } else {
     _setupModeFormat();
@@ -52,11 +51,42 @@ void Slave::setup()
 
 void Slave::loop()
 {
-  if (strcmp(MODE, SLAVE) == 0) {
+  if (isSlaveMode()) {
     _loopModeSlave();
-  } else if (strcmp(MODE, CONFIG) == 0) {
+  } else if (isConfigMode()) {
     _loopModeConfig();
   }
+}
+
+void Slave::setAPData(String ssid, String password)
+{
+  _ap_ssid = ssid;
+  _ap_password = password;
+}
+
+bool Slave::isSlaveMode()
+{
+  return strcmp(_data.deviceMode, SLAVE) == 0;
+}
+
+bool Slave::isConfigMode()
+{
+  return strcmp(_data.deviceMode, CONFIG) == 0;
+}
+
+void Slave::sendUDP(const char* topic, const char* value)
+{
+  IPAddress remoteIP(192, 168, 15, 10);
+  int remotePort = 4123;
+
+  String message = "";
+  message += topic;
+  message += ":";
+  message += value;
+
+  Udp.beginPacket(remoteIP, remotePort);
+  Udp.write(message.c_str());
+  Udp.endPacket();
 }
 
 void Slave::on(const char* eventName, fn callback)
@@ -92,12 +122,6 @@ void Slave::_trigger(const char* eventName, String *params)
     _logger->println("Event not found: ");
     _logger->println(eventName);
   }
-}
-
-void Slave::setAPData(String ssid, String password)
-{
-  _ap_ssid = ssid;
-  _ap_password = password;
 }
 
 void Slave::_setupModeConfig()
@@ -181,7 +205,7 @@ void Slave::_setupModeSlave()
 
     if (!error) {
       _logger->println("UDP Connection successful");
-      _send("hi", "");
+      sendUDP("hi", "");
     } else {
       _logger->println("UDP Connection failed");
     }
@@ -284,21 +308,6 @@ void Slave::_loopUDP()
   }
 }
 
-void Slave::_send(const char* topic, const char* value)
-{
-  IPAddress remoteIP(192, 168, 15, 10);
-  int remotePort = 4123;
-
-  String message = "";
-  message += topic;
-  message += ":";
-  message += value;
-
-  Udp.beginPacket(remoteIP, remotePort);
-  Udp.write(message.c_str());
-  Udp.endPacket();
-}
-
 void Slave::_loadData()
 {
   EEPROM.begin(_EEPROM_SIZE);
@@ -365,6 +374,3 @@ String Slave::_parseHTML(String html)
 
   return html;
 }
-
-
-
