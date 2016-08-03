@@ -168,7 +168,7 @@ void Slave::_setupModeSlave()
     Serial.println("Setup mode Slave");
     Serial.print("Try to connect to: ");
     Serial.println(_data.ssid);
-    Serial.print("Whith password: ");
+    Serial.print("With password: ");
     Serial.println(_data.password);
   }
 
