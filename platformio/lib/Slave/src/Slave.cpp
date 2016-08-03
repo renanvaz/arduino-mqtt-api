@@ -3,14 +3,6 @@
  * @author: Renan Vaz
  */
 
-
-#include <Arduino.h>
-#include <libb64/cencode.h>
-#include <ESP8266WiFi.h>
-#include <WiFiUdp.h>
-#include <ESP8266WebServer.h>
-#include <EEPROM.h>
-#include <FS.h>
 #include <Slave.h>
 
 // Create an instance of the server
@@ -37,9 +29,6 @@ void Slave::canDebug(bool debug)
 void Slave::setup()
 {
   _loadData();
-
-  Serial.println("Mode:");
-  Serial.println(_data.deviceMode);
 
   if (isModeSlave()) {
     _setupModeSlave();
@@ -92,7 +81,7 @@ void Slave::on(const char* eventName, std::function<void(String*)> cb)
 
     _cbIndex++;
   } else {
-    Serial.println("The callbacks limit has been reached: ");
+    Serial.print("The callbacks limit has been reached: ");
     Serial.println(MAX_CALLBACKS);
   }
 }
@@ -114,7 +103,7 @@ void Slave::_trigger(const char* eventName, String *params)
   if (found) {
     _cbFunctions[foundIndex](params);
   } else {
-    Serial.println("Event not found: ");
+    Serial.print("Event not found: ");
     Serial.println(eventName);
   }
 }
@@ -177,11 +166,13 @@ void Slave::_setupModeSlave()
 
   if (_CAN_DEBUG) {
     Serial.println("Setup mode Slave");
+    Serial.print("Try to connect to: ");
+    Serial.println(_data.ssid);
+    Serial.print("Whith password: ");
+    Serial.println(_data.password);
   }
 
-  // Setup button reset to config mode pin
-  pinMode(RESET_BUTTON_PIN, INPUT);
-
+  WiFi.mode(WIFI_STA);
   WiFi.begin(_data.ssid, _data.password);
 
   // Wait for connection
@@ -218,6 +209,9 @@ void Slave::_setupModeSlave()
         Serial.print("UDP connection successful on port:");
         Serial.println(localPort);
       }
+
+      // Setup button reset to config mode pin
+      pinMode(RESET_BUTTON_PIN, INPUT);
 
       send("hi", "");
     } else {
@@ -399,13 +393,22 @@ void Slave::_handleRootGET()
 
 void Slave::_handleRootPOST()
 {
-  const char* deviceName = server.arg("device-name").c_str();
-  const char* ssid       = server.arg("ssid").c_str();
-  const char* password   = server.arg("password").c_str();
+  String deviceName = server.arg("device-name");
+  String ssid       = server.arg("ssid");
+  String password   = server.arg("password");
 
-  strcpy(_data.deviceName, deviceName);
-  strcpy(_data.ssid, ssid);
-  strcpy(_data.password, password);
+  if (_CAN_DEBUG) {
+    Serial.print("Device name: ");
+    Serial.println(deviceName);
+    Serial.print("SSID:");
+    Serial.println(ssid);
+    Serial.print("Password:");
+    Serial.println(password);
+  }
+
+  strcpy(_data.deviceName, deviceName.c_str());
+  strcpy(_data.ssid, ssid.c_str());
+  strcpy(_data.password, password.c_str());
   strcpy(_data.deviceMode, SLAVE);
 
   _saveData();

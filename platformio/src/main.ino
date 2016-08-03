@@ -50,15 +50,9 @@ void onDigitalRead(String *params)
 void setup() {
   // Init Serial for log data
   Serial.begin(115200);
-  delay(10);
+  delay(100);
 
   slave.RESET_BUTTON_PIN = D1;
-
-  Serial.println("");
-  Serial.print("PIN: ");
-  Serial.println(D2);
-
-  Serial.println(millis());
 
   slave.canDebug(true);
   slave.setup();
