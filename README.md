@@ -7,5 +7,5 @@
 - TDD with Jasmine
 
 ## Arduino API
-Serial: network ssid pass
+Serial: network ssid pass  
 Serial: connect uri // MQTT
