@@ -85,12 +85,12 @@ class Slave
   char _packetBuffer[UDP_TX_PACKET_MAX_SIZE]; // UDP_TX_PACKET_MAX_SIZE is too large: 8192
 
   // Methods
-  void _setupModeConfig();
   void _setupModeSlave();
+  void _setupModeConfig();
   void _setupModeFormat();
 
-  void _loopModeConfig();
   void _loopModeSlave();
+  void _loopModeConfig();
 
   // void _trigger(const char* eventName);
   void _trigger(const char* eventName, String *params);

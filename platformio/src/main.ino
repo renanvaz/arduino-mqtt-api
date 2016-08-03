@@ -1,8 +1,8 @@
 #include <Slave.h>
 
 // Device firmware type
-const char* TYPE    = "Slave Default";
 const char* ID      = "031d8494-9d53-4f2c-bd4c-72e5fc5b3080";
+const char* TYPE    = "Slave Default";
 const char* VERSION = "1.0.0";
 
 Slave slave(ID, TYPE, VERSION);
