@@ -62,8 +62,17 @@ void setup() {
 
     slave.on("teste", onTeste);
     slave.on("pinMode", onPinMode);
-    slave.on("digitalWrite", onDigitalWrite);
     slave.on("digitalRead", onDigitalRead);
+    slave.on("digitalWrite", [](String *params){
+      Serial.println(millis());
+      int pin = atoi(params[0].c_str());
+      int value = atoi(params[1].c_str());
+
+      Serial.println(pin);
+      Serial.println(value);
+
+      digitalWrite(pin, value);
+    });
   }
 
   if (slave.isModeConfig()) {

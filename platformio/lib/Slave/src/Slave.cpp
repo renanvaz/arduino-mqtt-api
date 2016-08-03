@@ -73,7 +73,7 @@ void Slave::send(const char* topic, const char* value)
   Udp.endPacket();
 }
 
-void Slave::on(const char* eventName, std::function<void(String*)> cb)
+void Slave::on(const char* eventName, function<void(String*)> cb)
 {
   if (_cbIndex < MAX_CALLBACKS) {
     _cbNames[_cbIndex] = eventName;
@@ -152,8 +152,8 @@ void Slave::_setupModeConfig()
   }
 
   // Start the _server
-  server.on("/", HTTP_GET, std::bind(&Slave::_handleRootGET, this));
-  server.on("/", HTTP_POST, std::bind(&Slave::_handleRootPOST, this));
+  server.on("/", HTTP_GET, bind(&Slave::_handleRootGET, this));
+  server.on("/", HTTP_POST, bind(&Slave::_handleRootPOST, this));
   server.begin();
 }
 
@@ -238,8 +238,10 @@ void Slave::_setupModeFormat()
   }
 
   _clearData();
+  _loadData();
 
   strcpy(_data.deviceMode, CONFIG);
+
   _saveData();
 
   if (_CAN_DEBUG) {
@@ -381,6 +383,10 @@ void Slave::_clearData()
 
   for (i = 0; i < EEPROM_SIZE; i++) {
     EEPROM.write(i, '\0');
+  }
+
+  for (i = 0, l = sizeof(_data); i < l; i++){
+    *((char*)&_data + i) = EEPROM.read(ADDRESS_CONFIG + i);
   }
 
   EEPROM.end();

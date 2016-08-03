@@ -14,7 +14,7 @@
 #include <EEPROM.h>
 #include <FS.h>
 
-#include <functional>
+using namespace std;
 
 // States
 #define SLAVE "1"
@@ -51,7 +51,7 @@ class Slave
   void setup();
   void loop();
 
-  void on(const char* eventName, std::function<void(String*)> cb);
+  void on(const char* eventName, function<void(String*)> cb);
 
   void send(const char* topic, const char* value); // Send UDP packet
 
@@ -67,7 +67,7 @@ class Slave
   int _cbIndex = 0;
   const char* _cbNames[MAX_CALLBACKS];
 
-  std::function<void(String*)> _cbFunctions[MAX_CALLBACKS];
+  function<void(String*)> _cbFunctions[MAX_CALLBACKS];
 
   // HTML data for config mode
   String _htmlRoot;
