@@ -3,14 +3,7 @@
  * @author: Renan Vaz
  */
 
-#include <Arduino.h>
-#include <libb64/cencode.h>
 #include <Slave.h>
-#include <ESP8266WiFi.h>
-#include <WiFiUdp.h>
-#include <ESP8266WebServer.h>
-#include <EEPROM.h>
-#include <FS.h>
 
 // Create an instance of the server
 // specify the port to listen
@@ -19,30 +12,27 @@ WiFiUDP Udp;
 
 Slave::Slave(const char* id, const char* type, const char* version)
 {
-  _id = id;
-  _type = type;
-  _version = version;
+  _ID = id;
+  _TYPE = type;
+  _VERSION = version;
 }
 
 Slave::~Slave()
 {
 }
 
-void Slave::debug(HardwareSerial &logger)
+void Slave::canDebug(bool debug)
 {
-  _logger = &logger;
+  _CAN_DEBUG = debug;
 }
 
 void Slave::setup()
 {
   _loadData();
 
-  _logger->println("Mode:");
-  _logger->println(_data.deviceMode);
-
-  if (isSlaveMode()) {
+  if (isModeSlave()) {
     _setupModeSlave();
-  } else if (isConfigMode()) {
+  } else if (isModeConfig()) {
     _setupModeConfig();
   } else {
     _setupModeFormat();
@@ -51,30 +41,24 @@ void Slave::setup()
 
 void Slave::loop()
 {
-  if (isSlaveMode()) {
+  if (isModeSlave()) {
     _loopModeSlave();
-  } else if (isConfigMode()) {
+  } else if (isModeConfig()) {
     _loopModeConfig();
   }
 }
 
-void Slave::setAPData(String ssid, String password)
-{
-  _ap_ssid = ssid;
-  _ap_password = password;
-}
-
-bool Slave::isSlaveMode()
+bool Slave::isModeSlave()
 {
   return strcmp(_data.deviceMode, SLAVE) == 0;
 }
 
-bool Slave::isConfigMode()
+bool Slave::isModeConfig()
 {
   return strcmp(_data.deviceMode, CONFIG) == 0;
 }
 
-void Slave::sendUDP(const char* topic, const char* value)
+void Slave::send(const char* topic, const char* value)
 {
   IPAddress remoteIP(192, 168, 15, 10);
   int remotePort = 4123;
@@ -89,16 +73,16 @@ void Slave::sendUDP(const char* topic, const char* value)
   Udp.endPacket();
 }
 
-void Slave::on(const char* eventName, fn callback)
+void Slave::on(const char* eventName, function<void(String*)> cb)
 {
-  if (_callbackIndex < MAX_CALLBACKS) {
-    _callbackNames[_callbackIndex] = eventName;
-    _callbackFunctions[_callbackIndex] = callback;
+  if (_cbIndex < MAX_CALLBACKS) {
+    _cbNames[_cbIndex] = eventName;
+    _cbFunctions[_cbIndex] = cb;
 
-    _callbackIndex++;
+    _cbIndex++;
   } else {
-    _logger->println("The callbacks limit has been reached: ");
-    _logger->println(MAX_CALLBACKS);
+    Serial.print("The callbacks limit has been reached: ");
+    Serial.println(MAX_CALLBACKS);
   }
 }
 
@@ -108,7 +92,7 @@ void Slave::_trigger(const char* eventName, String *params)
   int foundIndex = 0;
 
   for (i = 0; i < MAX_CALLBACKS; i++) {
-    if (strcmp(_callbackNames[i], eventName) == 0) {
+    if (strcmp(_cbNames[i], eventName) == 0) {
       found = true;
       foundIndex = i;
 
@@ -117,15 +101,17 @@ void Slave::_trigger(const char* eventName, String *params)
   }
 
   if (found) {
-    _callbackFunctions[foundIndex](params);
+    _cbFunctions[foundIndex](params);
   } else {
-    _logger->println("Event not found: ");
-    _logger->println(eventName);
+    Serial.print("Event not found: ");
+    Serial.println(eventName);
   }
 }
 
 void Slave::_setupModeConfig()
 {
+  String ssid;
+
   // Init SPIFFS for load the index.html file
   SPIFFS.begin();
 
@@ -136,29 +122,38 @@ void Slave::_setupModeConfig()
   if (fileIndex) {
     _htmlRoot = fileIndex.readString();
   } else {
-    _logger->println("ERROR on loading \"index.html\" file");
+    Serial.println("ERROR on loading \"index.html\" file");
   }
 
   if (fileSuccess) {
     _htmlSuccess = fileSuccess.readString();
   } else {
-    _logger->println("ERROR on loading \"success.html\" file");
+    Serial.println("ERROR on loading \"success.html\" file");
   }
 
   // Creating a WiFi network
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(_ap_ssid.c_str(), _ap_password.c_str());
+  ssid = "HOMEZ - ";
+  ssid += _TYPE;
+  ssid += " (";
+  // ssid += _data.deviceName[0] != '\0' ? _data.deviceName : system_get_chip_id();
+  ssid += _data.deviceName[0] != '\0' ? _data.deviceName : "Unamed";
+  ssid += ")";
 
-  _logger->println("SSID: ");
-  _logger->println(_ap_ssid);
-  _logger->println("PASS: ");
-  _logger->println(_ap_password);
-  _logger->println("Local IP: ");
-  _logger->println(WiFi.softAPIP());
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid.c_str(), AP_PASSWORD);
+
+  if (_CAN_DEBUG) {
+    Serial.print("SSID: ");
+    Serial.println(ssid);
+    Serial.print("PASS: ");
+    Serial.println(AP_PASSWORD);
+    Serial.print("Local IP: ");
+    Serial.println(WiFi.softAPIP());
+  }
 
   // Start the _server
-  server.on("/", HTTP_GET, std::bind(&Slave::_handleRootGET, this));
-  server.on("/", HTTP_POST, std::bind(&Slave::_handleRootPOST, this));
+  server.on("/", HTTP_GET, bind(&Slave::_handleRootGET, this));
+  server.on("/", HTTP_POST, bind(&Slave::_handleRootPOST, this));
   server.begin();
 }
 
@@ -169,11 +164,15 @@ void Slave::_setupModeSlave()
   int maxConnectionTries = 20;
   int localPort = 4000; // procurar pela primeira porta livre
 
-  _logger->println("setupModeSlave");
+  if (_CAN_DEBUG) {
+    Serial.println("Setup mode Slave");
+    Serial.print("Try to connect to: ");
+    Serial.println(_data.ssid);
+    Serial.print("With password: ");
+    Serial.println(_data.password);
+  }
 
-  // Setup button reset to config mode pin
-  pinMode(RESET_BUTTON_PIN, INPUT);
-
+  WiFi.mode(WIFI_STA);
   WiFi.begin(_data.ssid, _data.password);
 
   // Wait for connection
@@ -187,8 +186,10 @@ void Slave::_setupModeSlave()
   }
 
   if (!error) {
-    _logger->println("Connected to: ");
-    _logger->println(_data.ssid);
+    if (_CAN_DEBUG) {
+      Serial.print("Connected to: ");
+      Serial.println(_data.ssid);
+    }
 
     connectionTries = 0;
 
@@ -204,13 +205,24 @@ void Slave::_setupModeSlave()
     }
 
     if (!error) {
-      _logger->println("UDP Connection successful");
-      sendUDP("hi", "");
+      if (_CAN_DEBUG) {
+        Serial.print("UDP connection successful on port:");
+        Serial.println(localPort);
+      }
+
+      // Setup button reset to config mode pin
+      pinMode(RESET_BUTTON_PIN, INPUT);
+
+      send("hi", "");
     } else {
-      _logger->println("UDP Connection failed");
+      if (_CAN_DEBUG) {
+        Serial.println("UDP Connection failed");
+      }
     }
   } else {
-    _logger->println("Connection failure... Restarting in mode CONFIG...");
+    if (_CAN_DEBUG) {
+      Serial.println("Connection failure... Restarting in mode CONFIG...");
+    }
 
     strcpy(_data.deviceMode, CONFIG);
     _saveData();
@@ -221,12 +233,20 @@ void Slave::_setupModeSlave()
 
 void Slave::_setupModeFormat()
 {
-  _logger->println("setupModeFormat");
+  if (_CAN_DEBUG) {
+    Serial.println("Setup mode Format");
+  }
 
   _clearData();
+  _loadData();
 
   strcpy(_data.deviceMode, CONFIG);
+
   _saveData();
+
+  if (_CAN_DEBUG) {
+    Serial.println("Restarting...");
+  }
 
   ESP.restart();
 }
@@ -242,7 +262,7 @@ void Slave::_loopModeSlave()
   if (digitalRead(RESET_BUTTON_PIN) == HIGH) {
     _onPressReset();
   } else {
-    _loopUDP();
+    _loopClient();
   }
 }
 
@@ -259,18 +279,28 @@ void Slave::_onPressReset()
   holdTime = millis() - startHold;
 
   if (holdTime > 5000) {
-    _logger->println("Clear data");
+    if (_CAN_DEBUG) {
+      Serial.println("Long button reset press.");
+    }
 
     _clearData();
+  } else {
+    if (_CAN_DEBUG) {
+      Serial.println("Button reset press.");
+    }
   }
 
   strcpy(_data.deviceMode, CONFIG);
   _saveData();
 
+  if (_CAN_DEBUG) {
+    Serial.println("Restarting...");
+  }
+
   ESP.restart();
 }
 
-void Slave::_loopUDP()
+void Slave::_loopClient()
 {
   int packetSize, lastFound, index, topicDivisorAt, remotePort;
   String message, topic, sParams, params[5];
@@ -283,6 +313,11 @@ void Slave::_loopUDP()
     remotePort  = Udp.remotePort();
 
     Udp.read(_packetBuffer, packetSize);
+
+    if (_CAN_DEBUG) {
+      Serial.print("New packet recived: ");
+      Serial.println(_packetBuffer);
+    }
 
     message = String(_packetBuffer);
 
@@ -310,10 +345,14 @@ void Slave::_loopUDP()
 
 void Slave::_loadData()
 {
-  EEPROM.begin(_EEPROM_SIZE);
+  if (_CAN_DEBUG) {
+    Serial.println("Loading data...");
+  }
+
+  EEPROM.begin(EEPROM_SIZE);
 
   for (i = 0, l = sizeof(_data); i < l; i++){
-    *((char*)&_data + i) = EEPROM.read(_ADDRESS_CONFIG + i);
+    *((char*)&_data + i) = EEPROM.read(ADDRESS_CONFIG + i);
   }
 
   EEPROM.end();
@@ -321,10 +360,14 @@ void Slave::_loadData()
 
 void Slave::_saveData()
 {
-  EEPROM.begin(_EEPROM_SIZE);
+  if (_CAN_DEBUG) {
+    Serial.println("Saving data...");
+  }
+
+  EEPROM.begin(EEPROM_SIZE);
 
   for (i = 0, l = sizeof(_data); i < l; i++){
-    EEPROM.write(_ADDRESS_CONFIG + i, *((char*)&_data + i));
+    EEPROM.write(ADDRESS_CONFIG + i, *((char*)&_data + i));
   }
 
   EEPROM.end();
@@ -332,10 +375,18 @@ void Slave::_saveData()
 
 void Slave::_clearData()
 {
-  EEPROM.begin(_EEPROM_SIZE);
+  if (_CAN_DEBUG) {
+    Serial.println("Cleaning data...");
+  }
 
-  for (i = 0; i < _EEPROM_SIZE; i++) {
-    EEPROM.write(i, NULL);
+  EEPROM.begin(EEPROM_SIZE);
+
+  for (i = 0; i < EEPROM_SIZE; i++) {
+    EEPROM.write(i, '\0');
+  }
+
+  for (i = 0, l = sizeof(_data); i < l; i++){
+    *((char*)&_data + i) = EEPROM.read(ADDRESS_CONFIG + i);
   }
 
   EEPROM.end();
@@ -352,6 +403,15 @@ void Slave::_handleRootPOST()
   String ssid       = server.arg("ssid");
   String password   = server.arg("password");
 
+  if (_CAN_DEBUG) {
+    Serial.print("Device name: ");
+    Serial.println(deviceName);
+    Serial.print("SSID:");
+    Serial.println(ssid);
+    Serial.print("Password:");
+    Serial.println(password);
+  }
+
   strcpy(_data.deviceName, deviceName.c_str());
   strcpy(_data.ssid, ssid.c_str());
   strcpy(_data.password, password.c_str());
@@ -361,13 +421,18 @@ void Slave::_handleRootPOST()
 
   server.send(200, "text/html", _parseHTML(_htmlSuccess));
 
+  if (_CAN_DEBUG) {
+    Serial.println("Restarting...");
+  }
+
   ESP.restart();
 }
 
 String Slave::_parseHTML(String html)
 {
-  html.replace("{{ device-type }}", _type);
-  html.replace("{{ device-id }}", _id);
+  html.replace("{{ device-type }}", _TYPE);
+  html.replace("{{ firmware-version }}", _VERSION);
+  html.replace("{{ device-id }}", _ID);
   html.replace("{{ device-name }}", _data.deviceName);
   html.replace("{{ ssid }}", _data.ssid);
   html.replace("{{ password }}", _data.password);
