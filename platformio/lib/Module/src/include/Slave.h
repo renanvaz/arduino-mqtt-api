@@ -6,13 +6,14 @@
 #ifndef Slave_h
 #define Slave_h
 
-#include <Arduino.h>
-#include <libb64/cencode.h>
-#include <ESP8266WiFi.h>
-#include <WiFiUdp.h>
-#include <ESP8266WebServer.h>
-#include <EEPROM.h>
-#include <FS.h>
+#include "Arduino.h"
+#include "ESP8266WiFi.h"
+#include "WiFiUdp.h"
+#include "ESP8266WebServer.h"
+#include "EEPROM.h"
+#include "FS.h"
+
+#include "unordered_map"
 
 using namespace std;
 
@@ -22,6 +23,9 @@ using namespace std;
 
 // Limit of binded commands
 #define MAX_CALLBACKS 100
+
+// PACKET BUFFER SIZE
+#define PACKET_SIZE 512
 
 // EEPROM memory address
 #define ADDRESS_CONFIG 0
@@ -41,22 +45,24 @@ struct Config
 class Slave
 {
   public:
-  Slave(const char* id, const char* type, const char* version);
+  Slave();
   ~Slave();
 
   unsigned int RESET_BUTTON_PIN;
 
   void canDebug(bool debug);
 
-  void setup();
+  void setup(const char* id, const char* type, const char* version);
   void loop();
-
-  void on(const char* eventName, function<void(String*)> cb);
 
   void send(const char* topic, const char* value); // Send UDP packet
 
+  void on(const char* eventName, function<void(String* params)> cb);
+
   bool isModeConfig();
   bool isModeSlave();
+
+  void createDefaultAPI();
 
   private:
   unsigned int i, l;
@@ -66,7 +72,6 @@ class Slave
 
   int _cbIndex = 0;
   const char* _cbNames[MAX_CALLBACKS];
-
   function<void(String*)> _cbFunctions[MAX_CALLBACKS];
 
   // HTML data for config mode
@@ -82,18 +87,18 @@ class Slave
   const char* _VERSION;
 
   // UDP packet buffer
-  char _packetBuffer[UDP_TX_PACKET_MAX_SIZE]; // UDP_TX_PACKET_MAX_SIZE is too large: 8192
+  char _packetBuffer[PACKET_SIZE]; // UDP_TX_PACKET_MAX_SIZE is too large: 8192
 
   // Methods
-  void _setupModeSlave();
   void _setupModeConfig();
+  void _setupModeSlave();
   void _setupModeFormat();
 
-  void _loopModeSlave();
   void _loopModeConfig();
+  void _loopModeSlave();
 
   // void _trigger(const char* eventName);
-  void _trigger(const char* eventName, String *params);
+  void _trigger(const char* eventName, String* params);
 
   void _loadData();
   void _saveData();
@@ -106,6 +111,7 @@ class Slave
   void _loopClient();
 
   String _parseHTML(String html);
+  int _searchEvent(const char* eventName);
 };
 
 #endif

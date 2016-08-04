@@ -3,18 +3,15 @@
  * @author: Renan Vaz
  */
 
-#include <Slave.h>
+#include "Slave.h"
 
 // Create an instance of the server
 // specify the port to listen
 ESP8266WebServer server(80);
 WiFiUDP Udp;
 
-Slave::Slave(const char* id, const char* type, const char* version)
+Slave::Slave()
 {
-  _ID = id;
-  _TYPE = type;
-  _VERSION = version;
 }
 
 Slave::~Slave()
@@ -26,8 +23,12 @@ void Slave::canDebug(bool debug)
   _CAN_DEBUG = debug;
 }
 
-void Slave::setup()
+void Slave::setup(const char* id, const char* type, const char* version)
 {
+  _ID = id;
+  _TYPE = type;
+  _VERSION = version;
+
   _loadData();
 
   if (isModeSlave()) {
@@ -73,39 +74,62 @@ void Slave::send(const char* topic, const char* value)
   Udp.endPacket();
 }
 
-void Slave::on(const char* eventName, function<void(String*)> cb)
+void Slave::on(const char* eventName, function<void(String* params)> cb)
 {
-  if (_cbIndex < MAX_CALLBACKS) {
-    _cbNames[_cbIndex] = eventName;
-    _cbFunctions[_cbIndex] = cb;
+  int foundIndex = _searchEvent(eventName);
 
-    _cbIndex++;
+  if (foundIndex == -1) {
+    if (_cbIndex < MAX_CALLBACKS) {
+      _cbNames[_cbIndex] = eventName;
+      _cbFunctions[_cbIndex] = cb;
+
+      _cbIndex++;
+
+      if (_CAN_DEBUG) {
+        Serial.print("Command created: ");
+        Serial.println(eventName);
+      }
+    } else {
+      if (_CAN_DEBUG) {
+        Serial.print("The callbacks limit has been reached: ");
+        Serial.println(MAX_CALLBACKS);
+      }
+    }
   } else {
-    Serial.print("The callbacks limit has been reached: ");
-    Serial.println(MAX_CALLBACKS);
+    if (_CAN_DEBUG) {
+      Serial.print("Cannot override command: ");
+      Serial.println(eventName);
+    }
   }
 }
 
-void Slave::_trigger(const char* eventName, String *params)
+void Slave::_trigger(const char* eventName, String* params)
 {
-  bool found = false;
-  int foundIndex = 0;
+  int foundIndex = _searchEvent(eventName);
 
-  for (i = 0; i < MAX_CALLBACKS; i++) {
+  if (foundIndex != -1) {
+    _cbFunctions[foundIndex](params);
+  } else {
+    if (_CAN_DEBUG) {
+      Serial.print("Command not found: ");
+      Serial.println(eventName);
+    }
+  }
+}
+
+int Slave::_searchEvent(const char* eventName)
+{
+  int foundIndex = -1;
+
+  for (i = 0; i < _cbIndex; i++) {
     if (strcmp(_cbNames[i], eventName) == 0) {
-      found = true;
       foundIndex = i;
 
       break;
     }
   }
 
-  if (found) {
-    _cbFunctions[foundIndex](params);
-  } else {
-    Serial.print("Event not found: ");
-    Serial.println(eventName);
-  }
+  return foundIndex;
 }
 
 void Slave::_setupModeConfig()
@@ -122,13 +146,17 @@ void Slave::_setupModeConfig()
   if (fileIndex) {
     _htmlRoot = fileIndex.readString();
   } else {
-    Serial.println("ERROR on loading \"index.html\" file");
+    if (_CAN_DEBUG) {
+      Serial.println("ERROR on loading \"index.html\" file");
+    }
   }
 
   if (fileSuccess) {
     _htmlSuccess = fileSuccess.readString();
   } else {
-    Serial.println("ERROR on loading \"success.html\" file");
+    if (_CAN_DEBUG) {
+      Serial.println("ERROR on loading \"success.html\" file");
+    }
   }
 
   // Creating a WiFi network
@@ -438,4 +466,31 @@ String Slave::_parseHTML(String html)
   html.replace("{{ password }}", _data.password);
 
   return html;
+}
+
+void Slave::createDefaultAPI()
+{
+  on("pinMode", [](String* params){
+    Serial.println(millis());
+
+    int pin = params[0].toInt();
+    String mode = params[1];
+
+    Serial.println(pin);
+    Serial.println(mode == "OUTPUT" ? "OUTPUT" : "INPUT");
+
+    pinMode(pin, mode == "OUTPUT" ? OUTPUT : INPUT);
+  });
+
+  on("digitalWrite", [](String* params){
+    Serial.println(millis());
+
+    int pin = params[0].toInt();
+    int value = params[1].toInt();
+
+    Serial.println(pin);
+    Serial.println(value);
+
+    digitalWrite(pin, value);
+  });
 }
