@@ -13,8 +13,6 @@
 #include "EEPROM.h"
 #include "FS.h"
 
-#include "unordered_map"
-
 using namespace std;
 
 // States
