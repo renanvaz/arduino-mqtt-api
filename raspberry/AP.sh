@@ -1,10 +1,15 @@
+#!/bin/bash
+
+LOCK_FILE=./waiting-for-reboot
+
+if [ ! -f "$LOCK_FILE" ]; then
 # Update packages
 sudo apt-get -y update
 sudo apt-get -y upgrade
 
 # Install packages
 sudo apt-get install -y hostapd udhcpd
-apt-get install iptables
+sudo apt-get install iptables
 sudo /etc/init.d/iptables start
 
 # Set a static IP
@@ -44,7 +49,7 @@ opt router 192.168.40.1
 opt lease 864000
 EOT
 
-sudo sed -i "s/^DHCPD_ENABLED=\"no\"/#DHCPD_ENABLED=\"no\"/g" /etc/default/udhcpd
+sudo sed -i 's/^DHCPD_ENABLED="no"/#DHCPD_ENABLED="no"/g' /etc/default/udhcpd
 
 sudo bash -c 'cat > /etc/hostapd/hostapd.conf' << EOT
 interface=wlan0
@@ -61,17 +66,30 @@ wpa_key_mgmt=WPA-PSK
 rsn_pairwise=CCMP
 EOT
 
-sudo sed -i "s/^#DAEMON_CONF=\"\"/DAEMON_CONF=\"\/etc\/hostapd\/hostapd.conf\"/g" /etc/default/hostapd
+sudo sed -i 's/^#DAEMON_CONF=""/DAEMON_CONF="\/etc\/hostapd\/hostapd.conf"/g' /etc/default/hostapd
 
-sudo sh -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
-sudo sed -i "s/^#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g" /etc/sysctl.conf
+# Create a cron job to continue after reboot
+(crontab -u pi -l ; echo '@reboot bash /home/pi/AP.sh') | crontab -u pi -
+sudo update-rc.d cron enable
+
+touch $LOCK_FILE
+
+sudo reboot
+else
+sudo sh -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'
+sudo sed -i 's/^#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
 sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 sudo iptables -A FORWARD -i eth0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
 sudo iptables -A FORWARD -i wlan0 -o eth0 -j ACCEPT
-sudo sh -c "iptables-save > /etc/iptables.ipv4.nat"
+sudo sh -c 'iptables-save > /etc/iptables.ipv4.nat'
 
 sudo service hostapd start
 sudo service udhcpd start
 
 sudo update-rc.d hostapd enable
 sudo update-rc.d udhcpd enable
+
+# Remove the cron job
+(crontab -u pi -l | grep -v '@reboot bash /home/pi/AP.sh') | crontab -u pi -
+rm $LOCK_FILE
+fi

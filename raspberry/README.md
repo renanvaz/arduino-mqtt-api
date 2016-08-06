@@ -1,6 +1,6 @@
 # I Follow this tutorial for make the AP.sh:  
 http://elinux.org/RPI-Wireless-Hotspot
 
-## To execute file user
+## To execute file
 
-    $ sudo bash 'AP.sh'
+    $ bash 'AP.sh'
