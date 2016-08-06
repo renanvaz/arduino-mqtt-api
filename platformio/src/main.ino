@@ -16,7 +16,7 @@ void setup() {
   if (Module.isModeSlave()) {
     Module.createDefaultAPI();
 
-    // Add some commands
+    // Create your API here
   }
 }
 
