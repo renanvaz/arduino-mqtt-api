@@ -61,22 +61,19 @@ bool Slave::isModeConfig()
 
 void Slave::send(const char* topic, const char* value)
 {
-  IPAddress remoteIP(192, 168, 15, 10);
-  int remotePort = 4123;
-
   String message = "";
   message += topic;
   message += ":";
   message += value;
 
-  Udp.beginPacket(remoteIP, remotePort);
+  Udp.beginPacket(HOMEZ_SERVER_IP, HOMEZ_SERVER_PORT);
   Udp.write(message.c_str());
   Udp.endPacket();
 }
 
 void Slave::on(const char* eventName, function<void(String* params)> cb)
 {
-  int foundIndex = _searchEvent(eventName);
+  int foundIndex = _findEventIndex(eventName);
 
   if (foundIndex == -1) {
     if (_cbIndex < MAX_CALLBACKS) {
@@ -105,7 +102,7 @@ void Slave::on(const char* eventName, function<void(String* params)> cb)
 
 void Slave::_trigger(const char* eventName, String* params)
 {
-  int foundIndex = _searchEvent(eventName);
+  int foundIndex = _findEventIndex(eventName);
 
   if (foundIndex != -1) {
     _cbFunctions[foundIndex](params);
@@ -117,7 +114,7 @@ void Slave::_trigger(const char* eventName, String* params)
   }
 }
 
-int Slave::_searchEvent(const char* eventName)
+int Slave::_findEventIndex(const char* eventName)
 {
   int foundIndex = -1;
 
@@ -160,7 +157,7 @@ void Slave::_setupModeConfig()
   }
 
   // Creating a WiFi network
-  ssid = "HOMEZ - ";
+  ssid = "Module - ";
   ssid += _TYPE;
   ssid += " (";
   // ssid += _data.deviceName[0] != '\0' ? _data.deviceName : system_get_chip_id();

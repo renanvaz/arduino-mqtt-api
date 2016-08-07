@@ -3,71 +3,72 @@
 LOCK_FILE=./waiting-for-reboot
 
 if [ ! -f "$LOCK_FILE" ]; then
-# Update packages
-sudo apt-get -y update
-sudo apt-get -y upgrade
-sudo apt-get -y dist-upgrade
-
-# Install packages
-sudo apt-get install -y iptables hostapd isc-dhcp-server
-
 # Set timezone and language
 sudo echo "America/Sao_Paulo" > /etc/timezone
 sudo dpkg-reconfigure -f noninteractive tzdata
 
 sudo apt-get install -y language-pack-pt-base
 
-# Configure udhcpd
-sudo bash -c 'cat > /etc/dhcp/dhcpd.conf' << EOT
-ddns-update-style none;
-default-lease-time 600;
-max-lease-time 7200;
-authoritative;
-log-facility local7;
+# Update packages
+#sudo apt-get -y update
+#sudo apt-get -y upgrade
 
-subnet 192.168.4.0 netmask 255.255.255.0 {
-  range 192.168.4.10 192.168.4.60;
-  option broadcast-address 192.168.4.255;
-  option routers 192.168.4.1;
-  default-lease-time 600;
-  max-lease-time 7200;
-  option domain-name "homez";
-  option domain-name-servers 8.8.8.8, 8.8.4.4;
-}
-EOT
-
-sudo sed -i 's/^INTERFACES=""/INTERFACES="wlan0" /g' /etc/default/isc-dhcp-server
+# Install packages
+sudo apt-get install -y hostapd udhcpd
+sudo apt-get install iptables
+sudo /etc/init.d/iptables start
 
 # Set a static IP
-sudo bash -c 'cat > /etc/network/interfaces' << EOT
-auto lo
+sudo ifconfig wlan0 192.168.40.1
 
+sudo bash -c 'cat > /etc/network/interfaces' << EOT
+source-directory /etc/network/interfaces.d
+
+auto lo
 iface lo inet loopback
+
 iface eth0 inet manual
 
-allow-hotplug wlan0
 iface wlan0 inet static
-    address 192.168.4.1
+    address 192.168.40.1
     netmask 255.255.255.0
+
+allow-hotplug wlan1
+iface wlan1 inet manual
+    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf
 
 up iptables-restore < /etc/iptables.ipv4.nat
 EOT
 
-sudo ifconfig wlan0 192.168.4.1
+# Configure udhcpd
+sudo bash -c 'cat > /etc/udhcpd.conf' << EOT
+start 192.168.40.20
+end 192.168.40.70
+
+interface wlan0
+
+remaining yes
+
+opt dns 8.8.8.8 8.8.4.4
+opt subnet 255.255.255.0
+opt router 192.168.40.1
+opt lease 864000
+EOT
+
+sudo sed -i 's/^DHCPD_ENABLED="no"/#DHCPD_ENABLED="no"/g' /etc/default/udhcpd
 
 sudo bash -c 'cat > /etc/hostapd/hostapd.conf' << EOT
 interface=wlan0
 driver=nl80211
-ssid=Server
+ssid=HOMEZ SERVER
 hw_mode=g
 channel=6
 macaddr_acl=0
 auth_algs=1
-ignore_broadcast_ssid=1 # 1 to Hide SSID
+ignore_broadcast_ssid=0 # 1 to Hide SSID
 wpa=2
 wpa_passphrase=123456789
 wpa_key_mgmt=WPA-PSK
-wpa_pairwise=TKIP
 rsn_pairwise=CCMP
 EOT
 
@@ -101,4 +102,5 @@ rm $LOCK_FILE
 sudo wget -O - https://nodejs.org/dist/v4.4.7/node-v4.4.7-linux-armv6l.tar.xz | sudo tar -C /usr/local/ --strip-components=1 -xJ
 sudo apt-get install -y git
 git clone https://github.com/renanvaz/arduino-mqtt-api.git
+
 fi

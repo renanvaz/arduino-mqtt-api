@@ -32,6 +32,10 @@ using namespace std;
 // Access point info
 #define AP_PASSWORD "123456789"
 
+// Server to connect IP
+const IPAddress HOMEZ_SERVER_IP(192, 168, 4, 1);
+const int HOMEZ_SERVER_PORT = 4123;
+
 struct Config
 {
   char deviceMode[2];
@@ -109,7 +113,7 @@ class Slave
   void _loopClient();
 
   String _parseHTML(String html);
-  int _searchEvent(const char* eventName);
+  int _findEventIndex(const char* eventName);
 };
 
 #endif
