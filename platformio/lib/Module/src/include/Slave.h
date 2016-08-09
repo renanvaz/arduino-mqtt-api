@@ -33,7 +33,8 @@ using namespace std;
 #define AP_PASSWORD "123456789"
 
 // Server to connect IP
-const IPAddress HOMEZ_SERVER_IP(192, 168, 4, 1);
+// const IPAddress HOMEZ_SERVER_IP(192, 168, 4, 1);
+const IPAddress HOMEZ_SERVER_IP(192, 168, 15, 10);
 const int HOMEZ_SERVER_PORT = 4123;
 
 struct Config
@@ -87,9 +88,6 @@ class Slave
   const char* _ID;
   const char* _TYPE;
   const char* _VERSION;
-
-  // UDP packet buffer
-  char _packetBuffer[PACKET_SIZE]; // UDP_TX_PACKET_MAX_SIZE is too large: 8192
 
   // Methods
   void _setupModeConfig();

@@ -101,4 +101,7 @@ rm $LOCK_FILE
 sudo wget -O - https://nodejs.org/dist/v4.4.7/node-v4.4.7-linux-armv6l.tar.xz | sudo tar -C /usr/local/ --strip-components=1 -xJ
 sudo apt-get install -y git
 git clone https://github.com/renanvaz/arduino-mqtt-api.git
+
+(crontab -u pi -l ; echo '@reboot node /home/pi/arduino-mqtt-api/lib/TestServerUDP.js') | crontab -u pi -
+
 fi

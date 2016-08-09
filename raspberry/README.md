@@ -1,5 +1,5 @@
 # I Follow this tutorial for make the AP.sh:  
-http://elinux.org/RPI-Wireless-Hotspot
+https://learn.adafruit.com/setting-up-a-raspberry-pi-as-a-wifi-access-point/install-software
 
 ## To execute file
 

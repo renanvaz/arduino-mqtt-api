@@ -62,6 +62,8 @@ bool Slave::isModeConfig()
 void Slave::send(const char* topic, const char* value)
 {
   String message = "";
+  message += _ID;
+  message += ":";
   message += topic;
   message += ":";
   message += value;
@@ -186,7 +188,7 @@ void Slave::_setupModeSlave()
 {
   bool error = false;
   int connectionTries = 0;
-  int maxConnectionTries = 20;
+  int maxConnectionTries = 40;
   int localPort = 4000; // procurar pela primeira porta livre
 
   if (_CAN_DEBUG) {
@@ -231,14 +233,19 @@ void Slave::_setupModeSlave()
 
     if (!error) {
       if (_CAN_DEBUG) {
-        Serial.print("UDP connection successful on port:");
+        Serial.print("UDP connection successful on port: ");
         Serial.println(localPort);
       }
 
       // Setup button reset to config mode pin
       pinMode(RESET_BUTTON_PIN, INPUT);
 
-      send("hi", "");
+      String message = "";
+      message += _ID;   message += "|";
+      message += _TYPE; message += "|";
+      message += _VERSION;
+
+      send("hi", message.c_str());
     } else {
       if (_CAN_DEBUG) {
         Serial.println("UDP Connection failed");
@@ -334,6 +341,8 @@ void Slave::_loopClient()
   packetSize = Udp.parsePacket();
 
   if (packetSize) {
+    char _packetBuffer[PACKET_SIZE] = {}; // UDP_TX_PACKET_MAX_SIZE is too large: 8192
+
     remoteIP    = Udp.remoteIP();
     remotePort  = Udp.remotePort();
 
@@ -483,11 +492,11 @@ void Slave::createDefaultAPI()
     Serial.println(millis());
 
     int pin = params[0].toInt();
-    int value = params[1].toInt();
+    String value = params[1];
 
     Serial.println(pin);
     Serial.println(value);
 
-    digitalWrite(pin, value);
+    digitalWrite(pin, value == "HIGH" ? HIGH : LOW);
   });
 }

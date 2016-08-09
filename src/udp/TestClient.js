@@ -6,7 +6,7 @@ var port = 12345;
 let c = new Client;
 
 c.connect(port, host).then(() => {
-    console.log('connected');
+  console.log('connected');
 });
 
 c.send('teste', 'LOW');
