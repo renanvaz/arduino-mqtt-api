@@ -2,8 +2,23 @@ import Server from './Server';
 import Board, {INPUT, OUTPUT, HIGH, LOW} from './Board';
 
 const $ = {
-  wait: function(time, fn) {
-    return setTimeout(fn, time);
+  wait: (delay, fn) => {
+    return setTimeout(fn, delay);
+  },
+  repeat: (times, delay, fn) => {
+    let counter = 0;
+    let repeat = () => {
+      return $.wait(delay, () => {
+        if (++count < times) {
+          repeat();
+        }
+      });
+    };
+
+    return repeat();
+  },
+  loop: (delay, fn) => {
+    return setInterval(fn, delay);
   }
 };
 
