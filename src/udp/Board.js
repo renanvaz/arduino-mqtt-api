@@ -18,7 +18,6 @@ const MAX_MESSAGE_ID = 999999;
 let MESSAGE_ID = 0;
 
 export default class Board extends EventEmitter {
-  // Construct
   /**
   * Constructor
   * @param  {string} IP

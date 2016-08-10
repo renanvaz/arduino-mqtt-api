@@ -53,12 +53,11 @@ class Slave
 
   unsigned int RESET_BUTTON_PIN;
 
-  void canDebug(bool debug);
-
-  void setup(const char* id, const char* type, const char* version);
+  void setup(String& id, String& type, String& version);
   void loop();
 
   void send(const char* topic, const char* value); // Send UDP packet
+  void send(const char* topic, String& value); // Send UDP packet
 
   void on(const char* eventName, function<void(String* params)> cb);
 
@@ -68,11 +67,6 @@ class Slave
   void createDefaultAPI();
 
   private:
-  unsigned int i, l;
-
-  // Debug in Serial
-  bool _CAN_DEBUG = false;
-
   int _cbIndex = 0;
   const char* _cbNames[MAX_CALLBACKS];
   function<void(String*)> _cbFunctions[MAX_CALLBACKS];
@@ -85,9 +79,9 @@ class Slave
   Config _data;
 
   // Device info
-  const char* _ID;
-  const char* _TYPE;
-  const char* _VERSION;
+  String _ID;
+  String _TYPE;
+  String _VERSION;
 
   // Methods
   void _setupModeConfig();

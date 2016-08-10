@@ -1,49 +1,26 @@
 import Server from './Server';
 import Board, {INPUT, OUTPUT, HIGH, LOW} from './Board';
-
-const $ = {
-  wait: (delay, fn) => {
-    return setTimeout(fn, delay);
-  },
-  repeat: (times, delay, fn) => {
-    let counter = 0;
-    let repeat = () => {
-      return $.wait(delay, () => {
-        if (++count < times) {
-          repeat();
-        }
-      });
-    };
-
-    return repeat();
-  },
-  loop: (delay, fn) => {
-    return setInterval(fn, delay);
-  }
-};
+import {D2} from '../utils/NodeMCU';
+import $ from '../utils/Helpers';
 
 let s = new Server(4123);
 
 s.on('client', (client) => {
   console.log('new client');
 
-  let pin = 4;
+  let pin   = D2;
   let state = false;
-  let b = new Board(client);
+  let b     = new Board(client);
 
   b.pinMode(pin, OUTPUT);
 
-  setInterval(() => {
-    state = !state;
+  $.loop(1000, () => {
+    b.digitalWrite(pin, (state = !state) ? HIGH : LOW);
+  });
 
-    console.log(state, state ? HIGH : LOW);
-
-    b.digitalWrite(pin, state ? HIGH : LOW);
-  }, 1000);
-
-  // console.time('dbsave');
-  // b.digitalRead(10).then((message) => {
-  //   console.timeEnd('dbsave');
-  //   console.log('digitalRead', message);
-  // });
+  console.time('dbsave');
+  b.digitalRead(10).then((value) => {
+    console.timeEnd('dbsave');
+    console.log('digitalRead', value);
+  });
 });
