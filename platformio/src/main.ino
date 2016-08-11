@@ -8,7 +8,10 @@ void setup() {
   // Init Serial for log data
   Serial.begin(115200);
 
-  Module.RESET_BUTTON_PIN = D1;
+  delay(42);
+
+  // Module.RESET_BUTTON_PIN = D1;
+  // Module.LED_STATUS_PIN = LED_BUILTIN;
 
   Module.setup(ID, TYPE, VERSION);
 

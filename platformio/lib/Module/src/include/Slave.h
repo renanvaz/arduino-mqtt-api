@@ -1,17 +1,18 @@
 /**
  * Slave.h
- * @author: Renan Vaz
+ * @author: Renan Vaz <renan.c.vaz@gmail.com>
  */
 
 #ifndef Slave_h
 #define Slave_h
 
-#include "Arduino.h"
-#include "ESP8266WiFi.h"
-#include "WiFiUdp.h"
-#include "ESP8266WebServer.h"
-#include "EEPROM.h"
-#include "FS.h"
+#include <Arduino.h>
+#include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
+#include <ESP8266WebServer.h>
+#include <EEPROM.h>
+#include <FS.h>
+#include <cstdint>
 
 using namespace std;
 
@@ -35,7 +36,7 @@ using namespace std;
 // Server to connect IP
 // const IPAddress HOMEZ_SERVER_IP(192, 168, 4, 1);
 const IPAddress HOMEZ_SERVER_IP(192, 168, 15, 10);
-const int HOMEZ_SERVER_PORT = 4123;
+const uint16_t HOMEZ_SERVER_PORT = 4123;
 
 struct Config
 {
@@ -51,7 +52,8 @@ class Slave
   Slave();
   ~Slave();
 
-  unsigned int RESET_BUTTON_PIN;
+  uint8_t RESET_BUTTON_PIN = D1;
+  uint8_t LED_STATUS_PIN = LED_BUILTIN;
 
   void setup(String& id, String& type, String& version);
   void loop();
@@ -67,7 +69,7 @@ class Slave
   void createDefaultAPI();
 
   private:
-  int _cbIndex = 0;
+  uint8_t _cbIndex = 0;
   const char* _cbNames[MAX_CALLBACKS];
   function<void(String*)> _cbFunctions[MAX_CALLBACKS];
 
@@ -105,7 +107,7 @@ class Slave
   void _loopClient();
 
   String _parseHTML(String html);
-  int _findEventIndex(const char* eventName);
+  int8_t _findEventIndex(const char* eventName);
 };
 
 #endif

@@ -1,6 +1,6 @@
 /**
  * Slave.cpp
- * @author: Renan Vaz
+ * @author: Renan Vaz <renan.c.vaz@gmail.com>
  */
 
 #include "Slave.h"
@@ -75,7 +75,7 @@ void Slave::send(const char* topic, const char* value)
 
 void Slave::on(const char* eventName, function<void(String* params)> cb)
 {
-  int foundIndex = _findEventIndex(eventName);
+  int8_t foundIndex = _findEventIndex(eventName);
 
   if (foundIndex == -1) {
     if (_cbIndex < MAX_CALLBACKS) {
@@ -104,7 +104,7 @@ void Slave::on(const char* eventName, function<void(String* params)> cb)
 
 void Slave::_trigger(const char* eventName, String* params)
 {
-  int foundIndex = _findEventIndex(eventName);
+  int8_t foundIndex = _findEventIndex(eventName);
 
   if (foundIndex != -1) {
     _cbFunctions[foundIndex](params);
@@ -116,11 +116,11 @@ void Slave::_trigger(const char* eventName, String* params)
   }
 }
 
-int Slave::_findEventIndex(const char* eventName)
+int8_t Slave::_findEventIndex(const char* eventName)
 {
-  int foundIndex = -1;
+  int8_t foundIndex = -1;
 
-  for (int i = 0; i < _cbIndex; i++) {
+  for (uint8_t i = 0; i < _cbIndex; i++) {
     if (strcmp(_cbNames[i], eventName) == 0) {
       foundIndex = i;
 
@@ -187,9 +187,9 @@ void Slave::_setupModeConfig()
 void Slave::_setupModeSlave()
 {
   bool error = false;
-  int connectionTries = 0;
-  int maxConnectionTries = 40;
-  int localPort = 4000; // procurar pela primeira porta livre
+  uint8_t connectionTries = 0;
+  uint8_t maxConnectionTries = 40;
+  uint16_t localPort = 4000; // procurar pela primeira porta livre
 
   #ifdef MODULE_CAN_DEBUG
     Serial.println("Setup mode Slave");
@@ -300,7 +300,7 @@ void Slave::_loopModeSlave()
 
 void Slave::_onPressReset()
 {
-  int startHold, holdTime;
+  uint16_t startHold, holdTime;
 
   startHold = millis();
 
@@ -334,7 +334,8 @@ void Slave::_onPressReset()
 
 void Slave::_loopClient()
 {
-  int packetSize, lastFound, index, topicDivisorAt, remotePort;
+  uint8_t index;
+  uint16_t packetSize, lastFound, topicDivisorAt, remotePort;
   String message, messageTopic, messageParams, params[5];
   IPAddress remoteIP;
 
@@ -362,7 +363,7 @@ void Slave::_loopClient()
     lastFound = 1;
     index = 0;
 
-    for (int i = 0, l = messageParams.length(); i < l; i++) {
+    for (uint16_t i = 0, l = messageParams.length(); i < l; i++) {
       if (messageParams[i] == '|') {
         params[index] = messageParams.substring(lastFound, i);
 
@@ -385,7 +386,7 @@ void Slave::_loadData()
 
   EEPROM.begin(EEPROM_SIZE);
 
-  for (int i = 0, l = sizeof(_data); i < l; i++){
+  for (uint16_t i = 0, l = sizeof(_data); i < l; i++){
     *((char*)&_data + i) = EEPROM.read(ADDRESS_CONFIG + i);
   }
 
@@ -400,7 +401,7 @@ void Slave::_saveData()
 
   EEPROM.begin(EEPROM_SIZE);
 
-  for (int i = 0, l = sizeof(_data); i < l; i++){
+  for (uint16_t i = 0, l = sizeof(_data); i < l; i++){
     EEPROM.write(ADDRESS_CONFIG + i, *((char*)&_data + i));
   }
 
@@ -415,11 +416,11 @@ void Slave::_clearData()
 
   EEPROM.begin(EEPROM_SIZE);
 
-  for (int i = 0; i < EEPROM_SIZE; i++) {
+  for (uint16_t i = 0; i < EEPROM_SIZE; i++) {
     EEPROM.write(i, '\0');
   }
 
-  for (int i = 0, l = sizeof(_data); i < l; i++){
+  for (uint16_t i = 0, l = sizeof(_data); i < l; i++){
     *((char*)&_data + i) = EEPROM.read(ADDRESS_CONFIG + i);
   }
 
@@ -477,14 +478,14 @@ String Slave::_parseHTML(String html)
 void Slave::createDefaultAPI()
 {
   on("pinMode", [](String* params){
-    int pin = params[0].toInt();
+    uint8_t pin = params[0].toInt();
     String mode = params[1];
 
     pinMode(pin, mode == "OUTPUT" ? OUTPUT : INPUT);
   });
 
   on("digitalWrite", [](String* params){
-    int pin = params[0].toInt();
+    uint8_t pin = params[0].toInt();
     String value = params[1];
 
     digitalWrite(pin, value == "HIGH" ? HIGH : LOW);

@@ -9,3 +9,7 @@ export const D7  = 13;
 export const D8  = 15;
 export const D9  = 3;
 export const D10 = 1;
+export const SDA = 4;
+export const SCL = 5;
+export const LED_BUILTIN = 16;
+export const BUILTIN_LED = 16;

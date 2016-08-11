@@ -1,6 +1,6 @@
 /**
  * Slave.h
- * @author: Renan Vaz
+ * @author: Renan Vaz <renan.c.vaz@gmail.com>
  */
 
 #ifndef Module_h
