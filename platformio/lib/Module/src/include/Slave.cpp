@@ -8,7 +8,7 @@
 // Create an instance of the server
 // specify the port to listen
 ESP8266WebServer server(80);
-WiFiUDP Udp;
+Protocol protocol;
 
 Slave::Slave()
 {
@@ -20,8 +20,8 @@ Slave::~Slave()
 
 void Slave::setup(String& id, String& type, String& version)
 {
-  _ID = id;
-  _TYPE = type;
+  _ID      = id;
+  _TYPE    = type;
   _VERSION = version;
 
   _loadData();
@@ -54,6 +54,11 @@ bool Slave::isModeConfig()
   return strcmp(_data.deviceMode, CONFIG) == 0;
 }
 
+void Slave::send(const char* topic)
+{
+  send(topic, "");
+}
+
 void Slave::send(const char* topic, String& value)
 {
   send(topic, value.c_str());
@@ -68,12 +73,10 @@ void Slave::send(const char* topic, const char* value)
   message += ":";
   message += value;
 
-  Udp.beginPacket(HOMEZ_SERVER_IP, HOMEZ_SERVER_PORT);
-  Udp.write(message.c_str());
-  Udp.endPacket();
+  protocol.send(message.c_str());
 }
 
-void Slave::on(const char* eventName, function<void(String* params)> cb)
+void Slave::on(const char* eventName, std::function<void(String* params)> cb)
 {
   int8_t foundIndex = _findEventIndex(eventName);
 
@@ -178,9 +181,9 @@ void Slave::_setupModeConfig()
     Serial.println(WiFi.softAPIP());
   #endif
 
-  // Start the _server
-  server.on("/", HTTP_GET, bind(&Slave::_handleRootGET, this));
-  server.on("/", HTTP_POST, bind(&Slave::_handleRootPOST, this));
+  // Start the server
+  server.on("/", HTTP_GET, std::bind(&Slave::_handleRootGET, this));
+  server.on("/", HTTP_POST, std::bind(&Slave::_handleRootPOST, this));
   server.begin();
 }
 
@@ -189,7 +192,7 @@ void Slave::_setupModeSlave()
   bool error = false;
   uint8_t connectionTries = 0;
   uint8_t maxConnectionTries = 40;
-  uint16_t localPort = 4000; // procurar pela primeira porta livre
+  int16_t localPort;
 
   #ifdef MODULE_CAN_DEBUG
     Serial.println("Setup mode Slave");
@@ -218,20 +221,9 @@ void Slave::_setupModeSlave()
       Serial.println(_data.ssid);
     #endif
 
-    connectionTries = 0;
+    localPort = protocol.setup();
 
-    while (Udp.begin(localPort) != 1) {
-      localPort++;
-
-      if (localPort < 5000) {
-        delay(1);
-      } else {
-        error = true;
-        break;
-      }
-    }
-
-    if (!error) {
+    if (localPort != -1) {
       #ifdef MODULE_CAN_DEBUG
         Serial.print("UDP connection successful on port: ");
         Serial.println(localPort);
@@ -240,12 +232,33 @@ void Slave::_setupModeSlave()
       // Setup button reset to config mode pin
       pinMode(RESET_BUTTON_PIN, INPUT);
 
-      String message = "";
-      message += _ID;   message += "|";
-      message += _TYPE; message += "|";
-      message += _VERSION;
+      protocol.setDevice(_ID, _TYPE, _VERSION);
+      protocol.setServer(HOMEZ_SERVER_IP, HOMEZ_SERVER_PORT);
 
-      send("hi", message);
+      protocol.onConnected([&](){
+        #ifdef MODULE_CAN_DEBUG
+          Serial.print("Connected to the server PORRA!");
+        #endif
+
+        String message = "";
+        message += _TYPE;
+        message += "|";
+        message += _VERSION;
+
+        send("setDriver", message);
+      });
+
+      protocol.onDisconnected([&](bool isTomeout = false){
+        #ifdef MODULE_CAN_DEBUG
+          Serial.print("Lagou aqui. Lagopu ai?");
+        #endif
+      });
+
+      protocol.onMessage([&](String message){
+        _onMessage(message);
+      });
+
+      protocol.connect();
     } else {
       #ifdef MODULE_CAN_DEBUG
         Serial.println("UDP Connection failed");
@@ -334,48 +347,40 @@ void Slave::_onPressReset()
 
 void Slave::_loopClient()
 {
-  uint8_t index;
-  uint16_t packetSize, lastFound, topicDivisorAt, remotePort;
-  String message, messageTopic, messageParams, params[5];
-  IPAddress remoteIP;
+  protocol.loop();
 
-  packetSize = Udp.parsePacket();
-
-  if (packetSize) {
-    char _packetBuffer[PACKET_SIZE] = {}; // UDP_TX_PACKET_MAX_SIZE is too large: 8192
-
-    remoteIP    = Udp.remoteIP();
-    remotePort  = Udp.remotePort();
-
-    Udp.read(_packetBuffer, packetSize);
-
-    #ifdef MODULE_CAN_DEBUG
-      Serial.print("New packet recived: ");
-      Serial.println(_packetBuffer);
-    #endif
-
-    message = String(_packetBuffer);
-
-    topicDivisorAt = message.indexOf(':');
-    messageTopic = message.substring(0, topicDivisorAt);
-    messageParams = message.substring(topicDivisorAt);
-
-    lastFound = 1;
-    index = 0;
-
-    for (uint16_t i = 0, l = messageParams.length(); i < l; i++) {
-      if (messageParams[i] == '|') {
-        params[index] = messageParams.substring(lastFound, i);
-
-        index++;
-        lastFound = i+1;
-      }
-    }
-
-    params[index] = messageParams.substring(lastFound);
-
-    _trigger(messageTopic.c_str(), params);
+  if (!protocol.connected() && millis() - _lastConnectionTry > RECONNECT_DELAY) {
+    _lastConnectionTry = millis();
+    
+    protocol.connect();
   }
+}
+
+void Slave::_onMessage(String message)
+{
+  uint8_t index;
+  uint16_t lastFound, topicDivisorAt;
+  String messageTopic, messageParams, params[5];
+
+  topicDivisorAt = message.indexOf(':');
+  messageTopic   = message.substring(0, topicDivisorAt);
+  messageParams  = message.substring(topicDivisorAt);
+
+  lastFound = 1;
+  index     = 0;
+
+  for (uint16_t i = 0, l = messageParams.length(); i < l; i++) {
+    if (messageParams[i] == '|') {
+      params[index] = messageParams.substring(lastFound, i);
+
+      index++;
+      lastFound = i+1;
+    }
+  }
+
+  params[index] = messageParams.substring(lastFound);
+
+  _trigger(messageTopic.c_str(), params);
 }
 
 void Slave::_loadData()
@@ -485,9 +490,18 @@ void Slave::createDefaultAPI()
   });
 
   on("digitalWrite", [](String* params){
-    uint8_t pin = params[0].toInt();
+    uint8_t pin  = params[0].toInt();
     String value = params[1];
 
-    digitalWrite(pin, value == "HIGH" ? HIGH : LOW);
+    digitalWrite(pin, value == "1" ? HIGH : LOW);
+  });
+
+  on("digitalRead", [&](String* params){
+    const char* resTopic = params[0].c_str();
+    uint8_t pin          = params[1].toInt();
+    uint8_t value        = digitalRead(pin);
+    String resMessage    = String(value);
+
+    send(resTopic, resMessage);
   });
 }
