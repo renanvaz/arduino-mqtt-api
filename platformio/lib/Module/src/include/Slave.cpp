@@ -67,8 +67,6 @@ void Slave::send(const char* topic, String& value)
 void Slave::send(const char* topic, const char* value)
 {
   String message = "";
-  message += _ID;
-  message += ":";
   message += topic;
   message += ":";
   message += value;
@@ -232,25 +230,24 @@ void Slave::_setupModeSlave()
       // Setup button reset to config mode pin
       pinMode(RESET_BUTTON_PIN, INPUT);
 
-      protocol.setDevice(_ID, _TYPE, _VERSION);
       protocol.setServer(HOMEZ_SERVER_IP, HOMEZ_SERVER_PORT);
 
       protocol.onConnected([&](){
         #ifdef MODULE_CAN_DEBUG
-          Serial.print("Connected to the server PORRA!");
+          Serial.print("Connected to the server");
         #endif
 
         String message = "";
-        message += _TYPE;
-        message += "|";
+        message += _ID; message += "|";
+        message += _TYPE; message += "|";
         message += _VERSION;
 
-        send("setDriver", message);
+        send("setDevice", message);
       });
 
       protocol.onDisconnected([&](bool isTomeout = false){
         #ifdef MODULE_CAN_DEBUG
-          Serial.print("Lagou aqui. Lagopu ai?");
+          Serial.print("Disconnected from the server");
         #endif
       });
 
@@ -351,7 +348,7 @@ void Slave::_loopClient()
 
   if (!protocol.connected() && millis() - _lastConnectionTry > RECONNECT_DELAY) {
     _lastConnectionTry = millis();
-    
+
     protocol.connect();
   }
 }

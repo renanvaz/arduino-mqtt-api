@@ -23,7 +23,6 @@ class Protocol
     ~Protocol();
 
     int16_t setup();
-    void setDevice(String& id, String& type, String& version);
     void setServer(IPAddress ip, uint16_t port);
     void connect();
     void disconnect();
@@ -39,8 +38,6 @@ class Protocol
     std::function<void(String)> _onMessageCb;
 
     String _ID;
-    String _TYPE;
-    String _VERSION;
 
     IPAddress _ip;
     uint16_t _port;

@@ -16,16 +16,6 @@ Protocol::~Protocol()
 {
 }
 
-
-void Protocol::setDevice(String& id, String& type, String& version)
-{
-  _ID = id;
-  _TYPE = type;
-  _VERSION = version;
-
-  _isConnected = false;
-}
-
 void Protocol::setServer(IPAddress ip, uint16_t port)
 {
   _ip          = ip;
