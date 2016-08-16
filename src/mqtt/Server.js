@@ -3,6 +3,50 @@ import {Board} from './Board';
 
 let clients = {};
 
+
+class ServerClient extends EventEmitter {
+  constructor(server, port, host) {
+    super();
+
+    this._host = host;
+    this._port = port;
+
+    this._lastTalkTime = Date.now();
+
+    this.server = server;
+
+    this.on('ping', () => {
+      this._lastTalkTime = Date.now();
+    });
+  }
+
+  send(topic, ...message) {
+    return this.server.send(this, topic, ...message);
+  }
+
+  ping() {
+    this.send('ping');
+  }
+
+  disconnect() {
+    console.log(`Client disconnected ${this.host}:${this.port}`);
+    this.send('bye');
+    this.emit('disconnect');
+  }
+
+  get lastTalkTime() {
+    return this._lastTalkTime;
+  }
+
+  get host() {
+    return this._host;
+  }
+
+  get port() {
+    return this._port;
+  }
+}
+
 var server = new mqtt.Server((client) => {
     client.on('connect', (packet) => {
         // console.log("CONNECT(%s): %j", packet.clientId, packet);
@@ -12,7 +56,7 @@ var server = new mqtt.Server((client) => {
 
         clients[client.id] = client;
 
-        let b = new Board(server, client);
+        let b = new Board(client);
 
         console.time('dbsave');
         b.digitalRead(10).then(function(message){
@@ -61,4 +105,4 @@ var server = new mqtt.Server((client) => {
 
         client.stream.end();
     });
-}).listen(1883);
+}).listen(4123);
