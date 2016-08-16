@@ -37,15 +37,6 @@ class MQTT
     std::function<void()> _onDisconnectedCb;
     std::function<void(String)> _onMessageCb;
 
-    String _ID;
-
-    IPAddress _ip;
-    uint16_t _port;
-    unsigned long _lastTalkTime;
-    bool _isConnected;
-
-    uint16_t _packetSize;
-
     #ifdef MODULE_CAN_DEBUG
     IPAddress _remoteIP;
     uint16_t _remotePort;

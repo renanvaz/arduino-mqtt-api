@@ -37,8 +37,6 @@ class Protocol
     std::function<void()> _onDisconnectedCb;
     std::function<void(String)> _onMessageCb;
 
-    String _ID;
-
     IPAddress _ip;
     uint16_t _port;
     unsigned long _lastTalkTime;

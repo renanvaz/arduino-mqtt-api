@@ -10,7 +10,6 @@ unsigned long now;
 
 MQTT::MQTT()
 {
-  _isConnected = false;
 }
 
 MQTT::~MQTT()
@@ -72,10 +71,15 @@ void MQTT::send(const char* message)
 
 void MQTT::connect()
 {
-  send("hi");
+  if (mqtt.connect("ESP8266Client")) { // O nome tem que ser o ID da placa
+    _onConnectedCb();
+  } else {
+    // Precisa pensar no que fazer aqui para manter a interface
+  }
 }
 
 void MQTT::disconnect()
 {
-  send("bye");
+  mqtt.disconnect();
+  _onDisconnectedCb();
 }
