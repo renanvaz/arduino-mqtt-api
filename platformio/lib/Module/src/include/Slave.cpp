@@ -234,7 +234,7 @@ void Slave::_setupModeSlave()
 
       protocol.onConnected([&](){
         #ifdef MODULE_CAN_DEBUG
-          Serial.print("Connected to the server");
+          Serial.println("Connected to the server");
         #endif
 
         String message = "";
@@ -247,7 +247,7 @@ void Slave::_setupModeSlave()
 
       protocol.onDisconnected([&](bool isTomeout = false){
         #ifdef MODULE_CAN_DEBUG
-          Serial.print("Disconnected from the server");
+          Serial.println("Disconnected from the server");
         #endif
       });
 
@@ -346,8 +346,10 @@ void Slave::_loopClient()
 {
   protocol.loop();
 
-  if (!protocol.connected() && millis() - _lastConnectionTry > RECONNECT_DELAY) {
-    _lastConnectionTry = millis();
+  unsigned long now = millis();
+
+  if (!protocol.connected() && (now - _lastConnectionTry) > RECONNECT_DELAY) {
+    _lastConnectionTry = now;
 
     protocol.connect();
   }

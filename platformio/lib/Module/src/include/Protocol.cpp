@@ -6,6 +6,7 @@
 #include "Protocol.h"
 
 WiFiUDP Udp;
+unsigned long now;
 
 Protocol::Protocol()
 {
@@ -65,44 +66,57 @@ void Protocol::loop()
   _packetSize = Udp.parsePacket();
 
   if (_packetSize) {
+    now = millis();
+
     char _packetBuffer[PACKET_SIZE] = {}; // UDP_TX_PACKET_MAX_SIZE is too large: 8192
-
-    #ifdef MODULE_CAN_DEBUG
-      _remoteIP    = Udp.remoteIP();
-      _remotePort  = Udp.remotePort();
-
-      Serial.print("New packet received from: ");
-      Serial.println(_remoteIP);
-      Serial.println(":");
-      Serial.println(_remotePort);
-    #endif
 
     Udp.read(_packetBuffer, _packetSize);
 
-    _lastTalkTime = millis();
+    #ifdef MODULE_CAN_DEBUG
+    _remoteIP    = Udp.remoteIP();
+    _remotePort  = Udp.remotePort();
 
-    if (_packetBuffer == "hi") {
+    Serial.print("New packet received from: ");
+    Serial.print(_remoteIP);
+    Serial.print(":");
+    Serial.println(_remotePort);
+    Serial.print("Message: ");
+    Serial.println(_packetBuffer);
+    #endif
+
+    _lastTalkTime = now;
+
+    if (strcmp(_packetBuffer, "hi") == 0) {
       _isConnected = true;
 
       _onConnectedCb();
-    } else if (_packetBuffer == "bye") {
+    } else if (strcmp(_packetBuffer, "bye") == 0) {
       _isConnected = false;
 
       _onDisconnectedCb();
-    } else if (_packetBuffer == "ping") {
-      send("pong");
+    } else if (strcmp(_packetBuffer, "ping") == 0) {
+      send("ping");
+    } else {
+      _onMessageCb(String(_packetBuffer));
     }
+  } else if (_isConnected) {
+    now = millis();
 
-    _onMessageCb(String(_packetBuffer));
-  } else if (millis() - _lastTalkTime > TIMEOUT) {
-    _isConnected = false;
+    if(now - _lastTalkTime > TIMEOUT) {
+      _isConnected = false;
 
-    _onDisconnectedCb();
+      _onDisconnectedCb();
+    }
   }
 }
 
 void Protocol::send(const char* message)
 {
+  #ifdef MODULE_CAN_DEBUG
+  Serial.print("Send message: ");
+  Serial.println(message);
+  #endif
+
   Udp.beginPacket(_ip, _port);
   Udp.write(message);
   Udp.endPacket();

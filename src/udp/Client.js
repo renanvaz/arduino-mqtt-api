@@ -3,11 +3,8 @@ import dgram from 'dgram';
 import Q from 'q';
 
 export default class Client extends EventEmitter {
-    constructor(port, host) {
+    constructor() {
         super();
-
-        this.port = port;
-        this.host = host;
 
         this.socket = dgram.createSocket('udp4');
 
@@ -18,9 +15,9 @@ export default class Client extends EventEmitter {
 
         this.socket.on('message', (msg, rinfo) => {
             // topic:message
-            let data = msg.toString().split(/([^:]+):(.*)/),
-                topic = data[1],
-                params = data[2].split('|');
+            let data   = msg.toString().split(/([^:]+):(.*)/),
+              topic    = data[1] ? data[1] : msg.toString(),
+              params   = data[2] ? data[2].split('|') : [];
 
             this.emit(topic, ...params);
             this.emit('message', topic, ...params);
@@ -29,7 +26,7 @@ export default class Client extends EventEmitter {
 
     send(topic, ...message) {
         let d = Q.defer(),
-            buffer = new Buffer(topic+':'+message.join('|'));
+            buffer = new Buffer(topic+(message.length ? ':'+message.join('|') : ''));
 
         this.socket.send(buffer, 0, buffer.length, this.port, this.host, (err) => {
             if (err) d.reject(err);
