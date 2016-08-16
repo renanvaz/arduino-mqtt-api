@@ -13,8 +13,6 @@
 #include <FS.h>
 #include <cstdint>
 
-#include "Protocol.h"
-
 // States
 #define SLAVE "1"
 #define CONFIG "0"
@@ -31,6 +29,17 @@
 
 // Access point info
 #define RECONNECT_DELAY 1000
+
+// USE MQTT or UDP (for UDP comment the line below)
+#define USE_MQTT
+
+#ifdef USE_MQTT
+#include "MQTT.h"
+MQTT protocol;
+#else
+#include "UDP.h"
+UDP protocol;
+#endif
 
 // Server to connect IP
 // const IPAddress HOMEZ_SERVER_IP(192, 168, 4, 1);

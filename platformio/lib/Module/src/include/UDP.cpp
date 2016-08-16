@@ -19,8 +19,8 @@ Protocol::~Protocol()
 
 void Protocol::setServer(IPAddress ip, uint16_t port)
 {
-  _ip          = ip;
-  _port        = port;
+  _ip   = ip;
+  _port = port;
 }
 
 bool Protocol::connected()

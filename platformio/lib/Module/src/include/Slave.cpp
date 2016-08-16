@@ -8,7 +8,6 @@
 // Create an instance of the server
 // specify the port to listen
 ESP8266WebServer server(80);
-Protocol protocol;
 
 Slave::Slave()
 {
