@@ -6,8 +6,8 @@
 #ifndef Module_h
 #define Module_h
 
-#include "include/Slave.h"
+#include "include/ModuleCore.h"
 
-static Slave Module;
+static ModuleCore Module;
 
 #endif

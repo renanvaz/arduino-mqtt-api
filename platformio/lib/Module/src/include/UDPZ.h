@@ -1,41 +1,48 @@
 /**
- * MQTT.h
+ * UDPZ.h
  * @author: Renan Vaz <renan.c.vaz@gmail.com>
  */
 
-#ifndef MQTT_h
-#define MQTT_h
+#ifndef UDPZ_h
+#define UDPZ_h
 
 #include <Arduino.h>
-#include "PubSubClient.h"
+#include <WiFiUdp.h>
 #include <cstdint>
 #include <functional>
 
 // PACKET BUFFER SIZE
 #define PACKET_SIZE 512
-
 #define TIMEOUT 250
 
-class MQTT
+class UDPZ
 {
   public:
-    MQTT();
-    ~MQTT();
+    UDPZ();
+    ~UDPZ();
 
     int16_t setup();
     void setServer(IPAddress ip, uint16_t port);
-    void connect();
+    void connect(IPAddress ip, uint16_t port);
+    void reconnect();
     void disconnect();
     bool connected();
+    void loop();
+    void send(const char* message);
     void onConnected(std::function<void()> cb);
     void onDisconnected(std::function<void()> cb);
     void onMessage(std::function<void(String)> cb);
-    void loop();
-    void send(const char* message);
   private:
     std::function<void()> _onConnectedCb;
     std::function<void()> _onDisconnectedCb;
     std::function<void(String)> _onMessageCb;
+
+    IPAddress _ip;
+    uint16_t _port;
+    unsigned long _lastTalkTime;
+    bool _isConnected;
+
+    uint16_t _packetSize;
 
     #ifdef MODULE_CAN_DEBUG
     IPAddress _remoteIP;

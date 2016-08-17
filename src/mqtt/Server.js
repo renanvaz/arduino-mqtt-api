@@ -1,5 +1,8 @@
 import * as mqtt from 'mqtt';
-import {Board} from './Board';
+import {EventEmitter} from 'events';
+import Board, {INPUT, OUTPUT, HIGH, LOW} from './Board';
+import {D2} from '../utils/NodeMCU';
+import $ from '../utils/Helpers';
 
 let clients = {};
 
@@ -11,31 +14,11 @@ class ServerClient extends EventEmitter {
     this._host = host;
     this._port = port;
 
-    this._lastTalkTime = Date.now();
-
     this.server = server;
-
-    this.on('ping', () => {
-      this._lastTalkTime = Date.now();
-    });
   }
 
   send(topic, ...message) {
     return this.server.send(this, topic, ...message);
-  }
-
-  ping() {
-    this.send('ping');
-  }
-
-  disconnect() {
-    console.log(`Client disconnected ${this.host}:${this.port}`);
-    this.send('bye');
-    this.emit('disconnect');
-  }
-
-  get lastTalkTime() {
-    return this._lastTalkTime;
   }
 
   get host() {
@@ -49,19 +32,23 @@ class ServerClient extends EventEmitter {
 
 var server = new mqtt.Server((client) => {
     client.on('connect', (packet) => {
-        // console.log("CONNECT(%s): %j", packet.clientId, packet);
+        console.log("CONNECT(%s): %j", packet.clientId, packet);
 
         client.connack({returnCode: 0});
         client.id = packet.clientId;
 
         clients[client.id] = client;
 
+        let pin   = D2;
         let b = new Board(client);
+        let state = false;
 
-        console.time('dbsave');
-        b.digitalRead(10).then(function(message){
-            console.timeEnd('dbsave');
-            console.log('digitalRead', message);
+        b.pinMode(pin, OUTPUT);
+
+        b.digitalWrite(pin, (state = !state) ? HIGH : LOW);
+
+        $.loop(1000, () => {
+          b.digitalWrite(pin, (state = !state) ? HIGH : LOW);
         });
     });
 

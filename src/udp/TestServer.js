@@ -15,22 +15,27 @@ s.on('client', (client) => {
     let state = false;
     let b     = new Board(client);
 
+    console.log(ID, TYPE, VERSION);
+
     b.pinMode(pin, OUTPUT);
 
-    b.digitalWrite(pin, (state = !state) ? HIGH : LOW);
-
-    $.loop(1000, () => {
-      b.digitalWrite(pin, (state = !state) ? HIGH : LOW);
-    });
-
-    let consoleName = 'dbsave'+(index++);
-
-    $.loop(1500, () => {
-      console.time(consoleName);
-      b.digitalRead(D2).then((value) => {
-        console.timeEnd(consoleName);
-        console.log('digitalRead', value);
-      });
-    });
+    console.time('send');
+    pin = 50;
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
+    console.timeEnd('send');
   });
 });

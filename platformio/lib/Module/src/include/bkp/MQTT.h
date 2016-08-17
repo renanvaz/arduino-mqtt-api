@@ -1,26 +1,26 @@
 /**
- * Protocol.h
+ * MQTT.h
  * @author: Renan Vaz <renan.c.vaz@gmail.com>
  */
 
-#ifndef Protocol_h
-#define Protocol_h
+#ifndef MQTT_h
+#define MQTT_h
 
 #include <Arduino.h>
-#include <WiFiUdp.h>
 #include <cstdint>
 #include <functional>
+#include "PubSubClient.h"
 
 // PACKET BUFFER SIZE
 #define PACKET_SIZE 512
 
 #define TIMEOUT 250
 
-class Protocol
+class MQTT
 {
   public:
-    Protocol();
-    ~Protocol();
+    MQTT();
+    ~MQTT();
 
     int16_t setup();
     void setServer(IPAddress ip, uint16_t port);
@@ -36,13 +36,6 @@ class Protocol
     std::function<void()> _onConnectedCb;
     std::function<void()> _onDisconnectedCb;
     std::function<void(String)> _onMessageCb;
-
-    IPAddress _ip;
-    uint16_t _port;
-    unsigned long _lastTalkTime;
-    bool _isConnected;
-
-    uint16_t _packetSize;
 
     #ifdef MODULE_CAN_DEBUG
     IPAddress _remoteIP;

@@ -4,18 +4,20 @@ import {EventEmitter} from 'events';
 export const INPUT          = 'INPUT';
 export const OUTPUT         = 'OUTPUT';
 // export const INPUT_PULLUP   = 'INPUT_PULLUP';
-export const HIGH           = 'HIGH';
-export const LOW            = 'LOW';
+export const HIGH           = '1';
+export const LOW            = '0';
 export const CONNECTED      = 'CONNECTED';
 export const DISCONNECTED   = 'DISCONNECTED';
 export const DEFAULT        = 'DEFAULT';
 export const EXTERNAL       = 'EXTERNAL';
 export const INTERNAL       = 'INTERNAL';
+export const MSBFIRST       = 'MSBFIRST';
+export const LSBFIRST       = 'LSBFIRST';
 
 const MAX_MESSAGE_ID = 999999;
 let MESSAGE_ID = 0;
 
-export class Board extends EventEmitter {
+export default class Board extends EventEmitter {
     // Construct
     /**
      * Constructor
