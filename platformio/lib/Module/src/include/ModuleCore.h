@@ -15,7 +15,8 @@
 
 #include "Modes.h"
 #include "Device.h"
-#include "Data.h"
+#include "Config.h"
+
 #include "ModeConfig.h"
 #include "ModeSlave.h"
 

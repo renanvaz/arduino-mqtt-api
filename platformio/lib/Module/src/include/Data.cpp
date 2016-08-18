@@ -4,3 +4,5 @@
  */
 
 #include "Data.h"
+
+DataStruct Data;

@@ -4,3 +4,5 @@
  */
 
 #include "Device.h"
+
+DeviceStruct Device;

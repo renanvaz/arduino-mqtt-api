@@ -4,3 +4,5 @@
  */
 
 #include "Config.h"
+
+ConfigStruct Config;

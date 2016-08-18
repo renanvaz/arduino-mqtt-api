@@ -22,17 +22,17 @@ void UDPZ::connect(IPAddress ip, uint16_t port)
   _ip   = ip;
   _port = port;
 
-  send("hi");
+  send("_hi");
 }
 
 void UDPZ::reconnect()
 {
-  send("hi");
+  send("_hi");
 }
 
 void UDPZ::disconnect()
 {
-  send("bye");
+  send("_bye");
 }
 
 bool UDPZ::connected()
@@ -50,7 +50,7 @@ void UDPZ::onDisconnected(std::function<void()> cb)
   _onDisconnectedCb = cb;
 }
 
-void UDPZ::onMessage(std::function<void(String)> cb)
+void UDPZ::onMessage(std::function<void(String&)> cb)
 {
   _onMessageCb = cb;
 }
@@ -86,16 +86,20 @@ void UDPZ::loop()
 
     _lastTalkTime = now;
 
-    if (strcmp(_packetBuffer, "hi") == 0) {
-      _isConnected = true;
+    if (!_isConnected) {
+      if (strcmp(_packetBuffer, "_hi") == 0) {
+        _isConnected = true;
 
-      _onConnectedCb();
-    } else if (strcmp(_packetBuffer, "bye") == 0) {
-      _isConnected = false;
+        _onConnectedCb();
+      }
+    } else if (_packetBuffer[0] == '_') {
+      if (strcmp(_packetBuffer, "_bye") == 0) {
+        _isConnected = false;
 
-      _onDisconnectedCb();
-    } else if (strcmp(_packetBuffer, "ping") == 0) {
-      send("ping");
+        _onDisconnectedCb();
+      } else if (strcmp(_packetBuffer, "_ping") == 0) {
+        send("_ping");
+      }
     } else {
       #ifdef MODULE_CAN_DEBUG
       _remoteIP    = Udp.remoteIP();
@@ -109,23 +113,18 @@ void UDPZ::loop()
       Serial.println(_packetBuffer);
       #endif
 
-      _onMessageCb(String(_packetBuffer));
+      String message = String(_packetBuffer);
+
+      _onMessageCb(message);
     }
   } else if (_isConnected) {
     now = millis();
 
     // Precisa acompanhar  para ver o que acontece quando resetar
-    Serial.print(now - _lastTalkTime);
-    Serial.print('>');
-    Serial.print(TIMEOUT);
     if (now - _lastTalkTime > TIMEOUT) {
-      Serial.println(": true");
-
       _isConnected = false;
 
       _onDisconnectedCb();
-    } else {
-      Serial.println(": false");
     }
   }
 }

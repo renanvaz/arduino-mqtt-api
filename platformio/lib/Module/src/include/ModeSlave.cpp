@@ -8,7 +8,6 @@
 // USE MQTT or UDP (for UDP comment the line below)
 UDPZ protocol;
 
-
 // Add interupts for button press (more performance)
 uint8_t resetButtonPin;
 long _startPressReset;
@@ -179,16 +178,19 @@ void ModeSlave::setup()
         send("setDevice", message.c_str());
       });
 
-      protocol.onDisconnected([&](bool isTomeout = false){
+      protocol.onDisconnected([&](){
+        _lastConnectionTry = millis();
+
         #ifdef MODULE_CAN_DEBUG
           Serial.println("Disconnected from the server");
         #endif
       });
 
-      protocol.onMessage([&](String message){
+      protocol.onMessage([&](String& message){
         _onMessage(message);
       });
 
+      _lastConnectionTry = millis();
       protocol.connect(SERVER_IP, SERVER_PORT);
     } else {
       #ifdef MODULE_CAN_DEBUG
@@ -222,7 +224,7 @@ void ModeSlave::loop()
   }
 }
 
-void ModeSlave::_onMessage(String message)
+void ModeSlave::_onMessage(String& message)
 {
   uint8_t index;
   int16_t charAt;

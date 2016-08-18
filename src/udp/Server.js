@@ -13,7 +13,7 @@ class ServerClient extends EventEmitter {
 
     this.server = server;
 
-    this.on('ping', () => {
+    this.on('_ping', () => {
       this._lastTalkTime = Date.now();
     });
   }
@@ -23,12 +23,12 @@ class ServerClient extends EventEmitter {
   }
 
   ping() {
-    this.send('ping');
+    this.send('_ping');
   }
 
   disconnect() {
     console.log(`Client disconnected ${this.host}:${this.port}`);
-    this.send('bye');
+    this.send('_bye');
     this.emit('disconnect');
   }
 
@@ -68,10 +68,10 @@ export default class Server extends EventEmitter {
         topic    = data[1] ? data[1] : msg.toString(),
         params   = data[2] ? data[2].split('|') : [];
 
-      if (topic == 'hi') {
+      if (topic == '_hi') {
         let client = new ServerClient(this, rinfo.port, rinfo.address);
         this._clients[rinfo.address+':'+rinfo.port] = client;
-        client.send('hi');
+        client.send('_hi');
         this.emit('client', client);
       } else {
         let client = this._clients[rinfo.address+':'+rinfo.port];
