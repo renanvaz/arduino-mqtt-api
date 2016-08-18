@@ -46,7 +46,7 @@ void ModeConfig::setup(const char*ssid, const char* password)
     Serial.print("SSID: ");
     Serial.println(ssid);
     Serial.print("PASS: ");
-    Serial.println(AP_PASSWORD);
+    Serial.println(password);
     Serial.print("Local IP: ");
     Serial.println(WiFi.softAPIP());
   #endif

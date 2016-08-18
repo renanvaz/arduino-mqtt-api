@@ -19,23 +19,16 @@ s.on('client', (client) => {
 
     b.pinMode(pin, OUTPUT);
 
-    console.time('send');
-    pin = 50;
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(pin++, (state = !state) ? HIGH : LOW);
-    console.timeEnd('send');
+    $.repeat(5, 1000, () => {
+      b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    });
+
+    $.repeat(5, 1500, () => {
+      console.time('read');
+      b.digitalRead(D2).then((v) => {
+        console.log(v);
+        console.timeEnd('read');
+      });
+    });
   });
 });

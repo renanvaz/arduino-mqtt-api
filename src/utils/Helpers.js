@@ -2,7 +2,7 @@ export default {
   wait: (delay, fn) => {
     return setTimeout(fn, delay);
   },
-  repeat: (times, delay, fn, wait) => {
+  repeat: function(times, delay, fn, wait) {
     let counter, id ;
     let repeater = () => {
       fn();
@@ -13,7 +13,7 @@ export default {
     };
 
     counter = 0;
-    id = $.loop(delay, repeater, wait);
+    id = this.loop(delay, repeater, wait);
 
     return id;
   },

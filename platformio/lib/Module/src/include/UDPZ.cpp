@@ -115,17 +115,10 @@ void UDPZ::loop()
     now = millis();
 
     // Precisa acompanhar  para ver o que acontece quando resetar
-    Serial.print(now - _lastTalkTime);
-    Serial.print('>');
-    Serial.print(TIMEOUT);
     if (now - _lastTalkTime > TIMEOUT) {
-      Serial.println(": true");
-
       _isConnected = false;
 
       _onDisconnectedCb();
-    } else {
-      Serial.println(": false");
     }
   }
 }

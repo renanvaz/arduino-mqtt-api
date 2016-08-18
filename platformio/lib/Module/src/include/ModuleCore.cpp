@@ -15,9 +15,9 @@ ModuleCore::~ModuleCore()
 
 void ModuleCore::setup(String& id, String& type, String& version)
 {
-  strcpy(Device.ID, id.c_str());
-  strcpy(Device.TYPE, type.c_str());
-  strcpy(Device.VERSION, version.c_str());
+  id.toCharArray(Device.ID, 37);
+  type.toCharArray(Device.TYPE, 26);
+  version.toCharArray(Device.VERSION, 12);
 
   Data.load();
 

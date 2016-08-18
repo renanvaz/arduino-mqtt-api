@@ -12,6 +12,8 @@ struct ConfigStruct
   char deviceName[33];
   char ssid[33];
   char password[64];
-} Config;
+};
+
+static ConfigStruct Config;
 
 #endif

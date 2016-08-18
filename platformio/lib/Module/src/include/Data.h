@@ -65,6 +65,8 @@ struct DataStruct
 
     EEPROM.end();
   }
-} Data;
+};
+
+static DataStruct Data;
 
 #endif
