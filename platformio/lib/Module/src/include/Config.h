@@ -14,6 +14,6 @@ struct ConfigStruct
   char password[64];
 };
 
-static ConfigStruct Config;
+extern ConfigStruct Config;
 
 #endif

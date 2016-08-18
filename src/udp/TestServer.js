@@ -19,11 +19,37 @@ s.on('client', (client) => {
 
     b.pinMode(pin, OUTPUT);
 
+    console.time('write');
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
+    console.timeEnd('write');
+
     $.repeat(5, 1000, () => {
       b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
     });
 
-    $.repeat(5, 1500, () => {
+    $.loop(1500, () => {
       console.time('read');
       b.digitalRead(D2).then((v) => {
         console.log(v);

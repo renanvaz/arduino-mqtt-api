@@ -13,6 +13,6 @@ struct DeviceStruct
   char VERSION[12]; // 999.999.999
 };
 
-static DeviceStruct Device;
+extern DeviceStruct Device;
 
 #endif

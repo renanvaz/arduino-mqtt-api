@@ -20,7 +20,7 @@
 #define MAX_CALLBACKS 100
 
 // Access point info
-#define RECONNECT_DELAY 1000
+#define RECONNECT_DELAY 500
 
 // Server to connect IP
 // const IPAddress HOMEZ_SERVER_IP(192, 168, 4, 1);
@@ -55,7 +55,7 @@ class ModeSlave
 
   // void _trigger(const char* eventName);
   void _trigger(const char* eventName, String* params);
-  void _onMessage(String message);
+  void _onMessage(String& message);
   int8_t _findEventIndex(const char* eventName);
 };
 

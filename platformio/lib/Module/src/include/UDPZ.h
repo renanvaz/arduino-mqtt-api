@@ -31,11 +31,11 @@ class UDPZ
     void send(const char* message);
     void onConnected(std::function<void()> cb);
     void onDisconnected(std::function<void()> cb);
-    void onMessage(std::function<void(String)> cb);
+    void onMessage(std::function<void(String&)> cb);
   private:
     std::function<void()> _onConnectedCb;
     std::function<void()> _onDisconnectedCb;
-    std::function<void(String)> _onMessageCb;
+    std::function<void(String&)> _onMessageCb;
 
     IPAddress _ip;
     uint16_t _port;

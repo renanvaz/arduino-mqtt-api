@@ -67,6 +67,6 @@ struct DataStruct
   }
 };
 
-static DataStruct Data;
+extern DataStruct Data;
 
 #endif
