@@ -1,5 +1,5 @@
 /**
- * Slave.h
+ * Module.h
  * @author: Renan Vaz <renan.c.vaz@gmail.com>
  */
 
