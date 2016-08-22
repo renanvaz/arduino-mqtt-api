@@ -24,7 +24,7 @@ export default class Board extends EventEmitter {
      * @param  {string} IP
      * @return {void}
      */
-    constructor(server, client) {
+    constructor(client) {
         super();
 
         this._client = client;
@@ -111,13 +111,9 @@ export default class Board extends EventEmitter {
         let d = Q.defer(),
             messageID;
 
-        console.log('digitalRead');
-
         if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
 
         messageID = this.genMessageID();
-
-        console.log('messageID', messageID);
 
         this.await(messageID, (message) => {
             d.resolve(message);

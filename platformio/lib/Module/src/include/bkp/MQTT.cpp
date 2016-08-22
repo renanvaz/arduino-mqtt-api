@@ -5,7 +5,8 @@
 
 #include "MQTT.h"
 
-PubSubClient mqtt;
+WiFiClient espClient;
+PubSubClient mqtt(espClient);
 unsigned long now;
 
 MQTT::MQTT()

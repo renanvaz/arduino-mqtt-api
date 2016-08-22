@@ -33,7 +33,7 @@ void ModuleCore::setup(String& id, String& type, String& version)
     String ssid = "Module - ";
     ssid += Device.TYPE;
     ssid += " (";
-    ssid += Config.deviceName[0] != '\0' ? Config.deviceName : "Unamed";
+    ssid += Config.deviceName[0] != '\0' ? Config.deviceName : String("Unamed ") + String(random(0xffff), HEX);
     ssid += ")";
 
     _modeConfig->setup(ssid.c_str(), AP_PASSWORD);

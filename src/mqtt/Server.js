@@ -6,6 +6,8 @@ import $ from '../utils/Helpers';
 
 let clients = {};
 
+let server = http.createServer();
+
 
 class ServerClient extends EventEmitter {
   constructor(server, port, host) {
@@ -30,12 +32,17 @@ class ServerClient extends EventEmitter {
   }
 }
 
-var server = new mqtt.Server((client) => {
-    client.on('connect', (packet) => {
-        console.log("CONNECT(%s): %j", packet.clientId, packet);
+new mqtt.Server(function(client) {
+    var self = this;
 
-        client.connack({returnCode: 0});
+    if (!self.clients) self.clients = {};
+
+    client.on('connect', (packet) => {
+        self.clients[packet.clientId] = client;
         client.id = packet.clientId;
+        console.log("CONNECT: client id: " + client.id);
+        client.subscriptions = [];
+        client.connack({returnCode: 0});
 
         clients[client.id] = client;
 
@@ -47,17 +54,50 @@ var server = new mqtt.Server((client) => {
 
         b.digitalWrite(pin, (state = !state) ? HIGH : LOW);
 
-        $.loop(1000, () => {
+        $.repeat(3, 1000, () => {
           b.digitalWrite(pin, (state = !state) ? HIGH : LOW);
+        });
+
+        $.loop(1000, () => {
+          console.time('test');
+          b.digitalRead(pin).then((v) => {
+            console.log(v);
+            console.timeEnd('test');
+          });
         });
     });
 
-    client.on('publish', (packet) => {
-        // console.log("PUBLISH(%s): %j", client.id, packet);
+    client.on('subscribe', function(packet) {
+      var granted = [];
 
-        for (let k in clients) {
-            clients[k].publish({topic: packet.topic, payload: packet.payload});
+      console.log("SUBSCRIBE(%s): %j", client.id, packet);
+
+      for (var i = 0; i < packet.subscriptions.length; i++) {
+        var qos = packet.subscriptions[i].qos
+          , topic = packet.subscriptions[i].topic
+          , reg = new RegExp(topic.replace('+', '[^\/]+').replace('#', '.+') + '$');
+
+        granted.push(qos);
+        client.subscriptions.push(reg);
+      }
+
+      client.suback({messageId: packet.messageId, granted: granted});
+    });
+
+    client.on('publish', function(packet) {
+      console.log("PUBLISH(%s): %j", client.id, packet);
+      for (var k in self.clients) {
+        var c = self.clients[k];
+
+        for (var i = 0; i < c.subscriptions.length; i++) {
+          var s = c.subscriptions[i];
+
+          if (s.test(packet.topic)) {
+            c.publish({topic: packet.topic, payload: packet.payload});
+            break;
+          }
         }
+      }
     });
 
     client.on('subscribe', (packet) => {
@@ -71,25 +111,21 @@ var server = new mqtt.Server((client) => {
         client.suback({granted: granted, messageId: packet.messageId});
     });
 
-    client.on('pingreq', (packet) => {
-        console.log('PINGREQ(%s)', client.id);
-
-        client.pingresp();
+    client.on('pingreq', function(packet) {
+      console.log('PINGREQ(%s)', client.id);
+      client.pingresp();
     });
 
-    client.on('disconnect', (packet) => {
-        client.stream.end();
+    client.on('disconnect', function(packet) {
+      client.stream.end();
     });
 
-    client.on('close', (err) => {
-        delete clients[client.id];
+    client.on('close', function(packet) {
+      delete self.clients[client.id];
     });
 
-    client.on('error', (err) => {
-        console.log('error!', err);
-
-        if (!clients[client.id]) return;
-
-        client.stream.end();
+    client.on('error', function(e) {
+      client.stream.end();
+      console.log(e);
     });
-}).listen(4123);
+}).listen(1883);

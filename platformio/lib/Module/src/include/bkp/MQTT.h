@@ -7,6 +7,7 @@
 #define MQTT_h
 
 #include <Arduino.h>
+#include <WiFiClient.h>
 #include <cstdint>
 #include <functional>
 #include "PubSubClient.h"
