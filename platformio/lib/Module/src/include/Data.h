@@ -6,6 +6,7 @@
 #ifndef Data_h
 #define Data_h
 
+#include <Arduino.h>
 #include <EEPROM.h>
 #include <cstdint>
 
@@ -19,10 +20,6 @@ struct DataStruct
 {
   void load()
   {
-    #ifdef MODULE_CAN_DEBUG
-      Serial.println("Loading data...");
-    #endif
-
     EEPROM.begin(EEPROM_SIZE);
 
     for (uint16_t i = 0, l = sizeof(Config); i < l; i++){
@@ -34,10 +31,6 @@ struct DataStruct
 
   void save()
   {
-    #ifdef MODULE_CAN_DEBUG
-      Serial.println("Saving data...");
-    #endif
-
     EEPROM.begin(EEPROM_SIZE);
 
     for (uint16_t i = 0, l = sizeof(Config); i < l; i++){

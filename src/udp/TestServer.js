@@ -1,60 +1,34 @@
+import SocketIO from 'socket.io';
 import Server from './Server';
-import Board, {INPUT, OUTPUT, HIGH, LOW} from './Board';
+import Module, {INPUT, OUTPUT, HIGH, LOW} from './Module';
 import {D2} from '../utils/NodeMCU';
 import $ from '../utils/Helpers';
 
+var io = new SocketIO();
 let s = new Server(4123);
+let pin = D2;
+let state = false;
+let b;
 
-var index = 0;
-
-s.on('client', (client) => {
+s.on('connection', (client) => {
   console.log('new client');
 
   client.on('setDevice', (ID, TYPE, VERSION) => {
-    let pin   = D2;
-    let state = false;
-    let b     = new Board(client);
-
     console.log(ID, TYPE, VERSION);
 
+    b = new Module(ID, TYPE, VERSION, client);
+
     b.pinMode(pin, OUTPUT);
+    b.digitalWrite(pin, state ? HIGH : LOW);
+  });
+});
 
-    console.time('write');
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    console.timeEnd('write');
-
-    $.repeat(5, 1000, () => {
-      b.digitalWrite(D2, (state = !state) ? HIGH : LOW);
-    });
-
-    $.loop(1500, () => {
-      console.time('read');
-      b.digitalRead(D2).then((v) => {
-        console.log(v);
-        console.timeEnd('read');
-      });
+io.on('connection', (client) => {
+  client.on('toggle', () => {
+    state = !state;
+    b.digitalWrite(pin, state ? HIGH : LOW).then(() => {
+      client.emit('response');
     });
   });
 });
+io.listen(3000);

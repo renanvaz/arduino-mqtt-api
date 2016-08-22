@@ -137,6 +137,11 @@ void ModeSlave::setup()
 
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
+    #ifdef MODULE_CAN_DEBUG
+      Serial.print("Try: ");
+      Serial.println(connectionTries);
+    #endif
+
     if (connectionTries++ < maxConnectionTries) {
       delay(500);
     } else {

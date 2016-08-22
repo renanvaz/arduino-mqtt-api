@@ -16,11 +16,6 @@ MQTT::~MQTT()
 {
 }
 
-void MQTT::setServer(IPAddress ip, uint16_t port)
-{
-  mqtt.setServer(ip, port);
-}
-
 bool MQTT::connected()
 {
   return mqtt.connected();
@@ -36,7 +31,7 @@ void MQTT::onDisconnected(std::function<void()> cb)
   _onDisconnectedCb = cb;
 }
 
-void MQTT::onMessage(std::function<void(String)> cb)
+void MQTT::onMessage(std::function<void(String&)> cb)
 {
   _onMessageCb = cb;
 }
@@ -69,8 +64,13 @@ void MQTT::send(const char* message)
   mqtt.publish("msg", message);
 }
 
-void MQTT::connect()
+void MQTT::connect(IPAddress ip, uint16_t port)
 {
+  _ip   = ip;
+  _port = port;
+
+  mqtt.setServer(ip, port);
+
   if (mqtt.connect("ESP8266Client")) { // O nome tem que ser o ID da placa
     _onConnectedCb();
   } else {
@@ -82,4 +82,13 @@ void MQTT::disconnect()
 {
   mqtt.disconnect();
   _onDisconnectedCb();
+}
+
+void MQTT::reconnect()
+{
+  if (mqtt.connect("ESP8266Client")) { // O nome tem que ser o ID da placa
+    _onConnectedCb();
+  } else {
+    // Precisa pensar no que fazer aqui para manter a interface
+  }
 }

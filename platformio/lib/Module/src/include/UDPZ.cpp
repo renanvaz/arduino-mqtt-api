@@ -22,17 +22,17 @@ void UDPZ::connect(IPAddress ip, uint16_t port)
   _ip   = ip;
   _port = port;
 
-  send("_hi");
+  send("+");
 }
 
 void UDPZ::reconnect()
 {
-  send("_hi");
+  send("+");
 }
 
 void UDPZ::disconnect()
 {
-  send("_bye");
+  send("-");
 }
 
 bool UDPZ::connected()
@@ -80,32 +80,27 @@ void UDPZ::loop()
   if (_packetSize) {
     now = millis();
 
-    char _packetBuffer[PACKET_SIZE] = {}; // UDP_TX_PACKET_MAX_SIZE is too large: 8192
-
     Udp.read(_packetBuffer, _packetSize);
-
+    _packetBuffer[_packetSize] = '\0';
     _lastTalkTime = now;
 
-    if (!_isConnected) {
-      if (strcmp(_packetBuffer, "_hi") == 0) {
-        _isConnected = true;
+    if (_packetBuffer[0] == '.') { // Ping
+      send(".");
+    } else if (_packetBuffer[0] == '-') { // Disconnect
+      _isConnected = false;
 
-        _onConnectedCb();
-      }
-    } else if (_packetBuffer[0] == '_') {
-      if (strcmp(_packetBuffer, "_bye") == 0) {
-        _isConnected = false;
+      _onDisconnectedCb();
+    } else if (_packetBuffer[0] == '+') { // Connect
+      _isConnected = true;
 
-        _onDisconnectedCb();
-      } else if (strcmp(_packetBuffer, "_ping") == 0) {
-        send("_ping");
-      }
-    } else {
+      _onConnectedCb();
+    } else { // Message
       #ifdef MODULE_CAN_DEBUG
       _remoteIP    = Udp.remoteIP();
       _remotePort  = Udp.remotePort();
 
-      Serial.print("New packet received from: ");
+      Serial.print(_packetSize);
+      Serial.print("B packet received from: ");
       Serial.print(_remoteIP);
       Serial.print(":");
       Serial.println(_remotePort);
@@ -120,7 +115,6 @@ void UDPZ::loop()
   } else if (_isConnected) {
     now = millis();
 
-    // Precisa acompanhar  para ver o que acontece quando resetar
     if (now - _lastTalkTime > TIMEOUT) {
       _isConnected = false;
 
@@ -132,8 +126,10 @@ void UDPZ::loop()
 void UDPZ::send(const char* message)
 {
   #ifdef MODULE_CAN_DEBUG
-  Serial.print("Send message: ");
-  Serial.println(message);
+  if (strcmp(message, ".") != 0 && strcmp(message, "+") != 0 && strcmp(message, "-") != 0) {
+    Serial.print("Send message: ");
+    Serial.println(message);
+  }
   #endif
 
   Udp.beginPacket(_ip, _port);

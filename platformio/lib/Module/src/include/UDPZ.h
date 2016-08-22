@@ -22,7 +22,6 @@ class UDPZ
     ~UDPZ();
 
     int16_t setup();
-    void setServer(IPAddress ip, uint16_t port);
     void connect(IPAddress ip, uint16_t port);
     void reconnect();
     void disconnect();
@@ -43,6 +42,7 @@ class UDPZ
     bool _isConnected;
 
     uint16_t _packetSize;
+    char _packetBuffer[PACKET_SIZE];
 
     #ifdef MODULE_CAN_DEBUG
     IPAddress _remoteIP;

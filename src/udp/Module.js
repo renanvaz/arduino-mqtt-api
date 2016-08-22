@@ -1,5 +1,4 @@
-import Q from 'q';
-import {EventEmitter} from 'events';
+import ModuleCore from './ModuleCore';
 
 export const INPUT          = 'INPUT';
 export const OUTPUT         = 'OUTPUT';
@@ -14,80 +13,22 @@ export const INTERNAL       = 'INTERNAL';
 export const MSBFIRST       = 'MSBFIRST';
 export const LSBFIRST       = 'LSBFIRST';
 
-const MAX_MESSAGE_ID = 999999;
-let MESSAGE_ID = 0;
-
-export default class Board extends EventEmitter {
+export default class Module extends ModuleCore {
   /**
   * Constructor
-  * @param  {string} IP
+  * @param  {string} id
+  * @param  {string} type
+  * @param  {string} version
+  * @param  {ServerClient} client
   * @return {void}
   */
-  constructor(client) {
-    super();
-
-    this._client = client;
+  constructor(id, type, version, client) {
+    super(id, type, version, client);
 
     this._valuesPinMode         = [INPUT, OUTPUT];
     this._valuesDigitalLevel    = [HIGH, LOW];
     this._valuesAnalogReference = [DEFAULT, EXTERNAL, INTERNAL];
     this._valuesBitOrder        = [MSBFIRST, LSBFIRST];
-
-    this._client.on('message', (topic, ...message) => {
-      this.emit(topic, ...message);
-    });
-
-    // Communication
-    this.Serial = {};
-    this.Stream = {};
-  }
-
-  /**
-  * Get instance of the client
-  * @return {Client} Client instance
-  */
-  get client() {
-    return this._client;
-  }
-
-  _send(topic, ...message) {
-    this.client.send(topic, ...message);
-  }
-
-  _ask(topic, ...message) {
-    let d = Q.defer(),
-    messageID = this._genMessageID();
-
-    this._await(messageID, (...message) => {
-      d.resolve(...message);
-    });
-
-    this.client.send(topic, messageID, ...message);
-
-    return d.promise;
-  }
-
-  /**
-  * Genherate a message ID
-  * @return {int} Message ID
-  */
-  _genMessageID() {
-    MESSAGE_ID = ++MESSAGE_ID;
-    MESSAGE_ID = MESSAGE_ID > MAX_MESSAGE_ID ? 0 : MESSAGE_ID;
-
-    return MESSAGE_ID;
-  }
-
-  /**
-  * Wait for a return to an action that requires response
-  * @param  {string}   topic
-  * @param  {function} cb
-  * @return {void}
-  */
-  _await(topic, cb) {
-    this.once(topic, (message) => {
-      cb(message);
-    });
   }
 
   // Digital I/O
@@ -101,7 +42,7 @@ export default class Board extends EventEmitter {
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
     if (this._valuesPinMode.indexOf(mode) === -1) { throw new Error('Invalid value of param "mode": ' + mode); }
 
-    this._send('pinMode', pin, mode);
+    return this._send('pinMode', pin, mode);
   }
 
   /**
@@ -114,7 +55,7 @@ export default class Board extends EventEmitter {
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
     if (this._valuesDigitalLevel.indexOf(level) === -1) { throw new Error('Invalid value of param "level": ' + level); }
 
-    this._send('digitalWrite', pin, level);
+    return this._send('digitalWrite', pin, level);
   }
 
   /**
@@ -123,16 +64,9 @@ export default class Board extends EventEmitter {
   * @return {Promise}
   */
   digitalRead(pin) {
-    let d = Q.defer(),
-    messageID;
-
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
 
-    this._ask('digitalRead', pin).then((...message) => {
-      d.resolve(...message);
-    });
-
-    return d.promise;
+    return this._ask('digitalRead', pin);
   }
 
   // Analog I/O
@@ -144,7 +78,7 @@ export default class Board extends EventEmitter {
   analogReference(value) {
     if (this._valuesAnalogReference.indexOf(mode) === -1) { throw new Error('Invalid value of param "value": ' + value); }
 
-    this._send('digitalWrite', value);
+    return this._send('digitalWrite', value);
   }
 
   /**
@@ -153,15 +87,9 @@ export default class Board extends EventEmitter {
   * @return {Promise} int (0 to 1023)
   */
   analogRead(pin) {
-    let d = Q.defer();
-
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
 
-    this._ask('analogRead', pin).then((...message) => {
-      d.resolve(...message);
-    });
-
-    return d.promise;
+    return this._ask('analogRead', pin);
   }
 
   /**
@@ -173,7 +101,7 @@ export default class Board extends EventEmitter {
   analogWrite(pin, value) {
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
 
-    this._send('analogWrite', pin, value);
+    return this._send('analogWrite', pin, value);
   }
 
   // Advanced I/O
@@ -188,7 +116,7 @@ export default class Board extends EventEmitter {
   tone(pin, frequency, duration) {
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
 
-    this._send('tone', pin, frequency, duration);
+    return this._send('tone', pin, frequency, duration);
   }
 
   /**
@@ -199,7 +127,7 @@ export default class Board extends EventEmitter {
   noTone(pin) {
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
 
-    this._send('noTone', pin);
+    return this._send('noTone', pin);
   }
 
   /**
@@ -215,7 +143,7 @@ export default class Board extends EventEmitter {
     if (typeof clockPin !== 'number') { throw new TypeError('The param "clockPin" must be a number'); }
     if (this._valuesBitOrder.indexOf(bitOrder) === -1) { throw new Error('Invalid value of param "bitOrder": ' + bitOrder); }
 
-    this._send('shiftOut', dataPin, clockPin, bitOrder, value);
+    return this._send('shiftOut', dataPin, clockPin, bitOrder, value);
   }
 
   /**
@@ -226,17 +154,11 @@ export default class Board extends EventEmitter {
   * @return {Promise}
   */
   shiftIn(dataPin, clockPin, bitOrder) {
-    let d = Q.defer();
-
     if (typeof dataPin !== 'number') { throw new TypeError('The param "dataPin" must be a number'); }
     if (typeof clockPin !== 'number') { throw new TypeError('The param "clockPin" must be a number'); }
     if (this._valuesBitOrder.indexOf(bitOrder) === -1) { throw new Error('Invalid value of param "bitOrder": ' + bitOrder); }
 
-    this._ask('shiftIn', dataPin, clockPin, bitOrder).then((...message) => {
-      d.resolve(...message);
-    });
-
-    return d.promise;
+    return this._ask('shiftIn', dataPin, clockPin, bitOrder);
   }
 
   /**
@@ -247,65 +169,10 @@ export default class Board extends EventEmitter {
   * @return {Promise}
   */
   pulseIn(pin, value, timeout) {
-    let d = Q.defer();
-
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
     if (this._valuesDigitalLevel.indexOf(value) === -1) { throw new Error('Invalid value of param "value": ' + value); }
 
-    this._ask('pulseIn', pin, value, timeout).then((...message) => {
-      d.resolve(...message);
-    });
-
-    return d.promise;
-  }
-
-  // Implements
-  // External Interrupts
-  attachInterrupt() {
-    let d = Q.defer();
-
-    if (this._status == CONNECTED) {
-      setTimeout(() => { d.resolve(); }, 0);
-    } else {
-      setTimeout(() => { d.reject(); }, 0);
-    }
-
-    return d.promise;
-  }
-
-  detachInterrupt() {
-    let d = Q.defer();
-
-    if (this._status == CONNECTED) {
-      setTimeout(() => { d.resolve(); }, 0);
-    } else {
-      setTimeout(() => { d.reject(); }, 0);
-    }
-
-    return d.promise;
-  }
-
-  // Interrupts
-  interrupts() {
-    let d = Q.defer();
-
-    if (this._status == CONNECTED) {
-      setTimeout(() => { d.resolve(); }, 0);
-    } else {
-      setTimeout(() => { d.reject(); }, 0);
-    }
-
-    return d.promise;
-  }
-
-  noInterrupts() {
-    let d = Q.defer();
-
-    if (this._status == CONNECTED) {
-      setTimeout(() => { d.resolve(); }, 0);
-    } else {
-      setTimeout(() => { d.reject(); }, 0);
-    }
+    return this._ask('pulseIn', pin, value, timeout);
 
     return d.promise;
   }
