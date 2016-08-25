@@ -8,6 +8,7 @@
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <ArduinoJson.h>
 #include <cstdint>
 
 #include "Modes.h"
@@ -41,7 +42,7 @@ class ModeSlave
 
   void send(const char* topic, const char* value); // Send UDP packet
 
-  void on(const char* eventName, std::function<void(String*)> cb);
+  void on(const char* eventName, std::function<void(JsonObject& params)> cb);
 
   void createDefaultAPI();
 
@@ -51,10 +52,9 @@ class ModeSlave
 
   uint8_t _cbIndex = 0;
   const char* _cbNames[MAX_CALLBACKS];
-  std::function<void(String*)> _cbFunctions[MAX_CALLBACKS];
+  std::function<void(JsonObject& params)> _cbFunctions[MAX_CALLBACKS];
 
-  // void _trigger(const char* eventName);
-  void _trigger(const char* eventName, String* params);
+  void _trigger(const char* eventName, JsonObject& params);
   void _onMessage(String& message);
   int8_t _findEventIndex(const char* eventName);
 };

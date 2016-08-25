@@ -63,7 +63,7 @@ void ModeSlave::send(const char* topic, const char* value)
   protocol.send(message);
 }
 
-void ModeSlave::on(const char* eventName, std::function<void(String* params)> cb)
+void ModeSlave::on(const char* eventName, std::function<void(JsonObject& params)> cb)
 {
   int8_t foundIndex = _findEventIndex(eventName);
 
@@ -92,7 +92,7 @@ void ModeSlave::on(const char* eventName, std::function<void(String* params)> cb
   }
 }
 
-void ModeSlave::_trigger(const char* eventName, String* params)
+void ModeSlave::_trigger(const char* eventName, JsonObject& params)
 {
   int8_t foundIndex = _findEventIndex(eventName);
 
@@ -231,27 +231,14 @@ void ModeSlave::loop()
 
 void ModeSlave::_onMessage(String& message)
 {
-  uint8_t index;
   int16_t charAt;
-  String messageTopic, messageParams, params[5];
+  String messageTopic, messageParams;
 
   charAt         = message.indexOf(':');
   messageTopic   = message.substring(0, charAt);
   messageParams  = message.substring(charAt);
 
-  charAt = 1;
-  index  = 0;
 
-  for (uint16_t i = 0, l = messageParams.length(); i < l; i++) {
-    if (messageParams[i] == '|') {
-      params[index] = messageParams.substring(charAt, i);
-
-      index++;
-      charAt = i+1;
-    }
-  }
-
-  params[index] = messageParams.substring(charAt);
 
   _trigger(messageTopic.c_str(), params);
 }

@@ -81,6 +81,17 @@ void ModuleCore::send(const char* topic)
   _modeSlave->send(topic, "");
 }
 
+void ModuleCore::send(const char* topic, JsonObject& value)
+{
+  String v;
+  value.printTo(v);
+
+  Serial.print("Debug prontTo: ");
+  Serial.println(v);
+
+  _modeSlave->send(topic, v.c_str());
+}
+
 void ModuleCore::send(const char* topic, String& value)
 {
   _modeSlave->send(topic, value.c_str());
@@ -91,33 +102,34 @@ void ModuleCore::send(const char* topic, const char* value)
   _modeSlave->send(topic, value);
 }
 
-void ModuleCore::on(const char* eventName, std::function<void(String* params)> cb)
+void ModuleCore::on(const char* eventName, std::function<void(JsonObject& params)> cb)
 {
   _modeSlave->on(eventName, cb);
 }
 
 void ModuleCore::createDefaultAPI()
 {
-  on("pinMode", [](String* params){
-    uint8_t pin = params[0].toInt();
-    String mode = params[1];
+  on("pinMode", [](JsonObject& params){
+    uint8_t pin = params["pin"];
+    String mode = params["mode"];
 
     pinMode(pin, mode == "OUTPUT" ? OUTPUT : INPUT);
   });
 
-  on("digitalWrite", [](String* params){
-    uint8_t pin  = params[0].toInt();
-    String value = params[1];
+  on("digitalWrite", [](JsonObject& params){
+    uint8_t pin  = params["pin"];
+    String value = params["value"];
 
     digitalWrite(pin, value == "1" ? HIGH : LOW);
   });
 
-  on("digitalRead", [&](String* params){
-    const char* resTopic = params[0].c_str();
-    uint8_t pin          = params[1].toInt();
-    uint8_t value        = digitalRead(pin);
-    String resMessage    = String(value);
+  on("digitalRead", [&](JsonObject& params){
+    const char* id = params["id"];
+    uint8_t pin    = params["pin"];
+    uint8_t value  = digitalRead(pin);
 
-    send(resTopic, resMessage);
+    String res     = "{\"value\":\""+String(value)+"\"}";
+
+    send(id, res);
   });
 }

@@ -36,11 +36,12 @@ class ModuleCore
   void setup(String& id, String& type, String& version);
   void loop();
 
-  void send(const char* topic); // Send UDP packet
-  void send(const char* topic, const char* value); // Send UDP packet
-  void send(const char* topic, String& value); // Send UDP packet
+  void send(const char* topic);
+  void send(const char* topic, JsonObject& value);
+  void send(const char* topic, String& value);
+  void send(const char* topic, const char* value);
 
-  void on(const char* eventName, std::function<void(String*)> cb);
+  void on(const char* eventName, std::function<void(JsonObject&)> cb);
 
   bool isModeConfig();
   bool isModeSlave();
