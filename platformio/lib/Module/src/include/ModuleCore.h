@@ -11,6 +11,7 @@
 #include <ESP8266WebServer.h>
 #include <EEPROM.h>
 #include <FS.h>
+#include <ArduinoJson.h>
 #include <cstdint>
 
 #include "Modes.h"
