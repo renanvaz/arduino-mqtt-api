@@ -53,17 +53,12 @@ ModeSlave::~ModeSlave()
 {
 }
 
-void ModeSlave::send(const char* topic, const char* value)
+void ModeSlave::send(const char* topic, const char* data)
 {
-  char message[PACKET_SIZE];
-  strcpy(message, topic);
-  strcat(message, ":");
-  strcat(message, value);
-
-  protocol.send(message);
+  protocol.send(topic, data);
 }
 
-void ModeSlave::on(const char* eventName, std::function<void(JsonObject& params)> cb)
+void ModeSlave::on(const char* eventName, std::function<void(JsonObject&, JsonObject&)> cb)
 {
   int8_t foundIndex = _findEventIndex(eventName);
 
@@ -87,20 +82,6 @@ void ModeSlave::on(const char* eventName, std::function<void(JsonObject& params)
   } else {
     #ifdef MODULE_CAN_DEBUG
       Serial.print("Cannot override command: ");
-      Serial.println(eventName);
-    #endif
-  }
-}
-
-void ModeSlave::_trigger(const char* eventName, JsonObject& params)
-{
-  int8_t foundIndex = _findEventIndex(eventName);
-
-  if (foundIndex != -1) {
-    _cbFunctions[foundIndex](params);
-  } else {
-    #ifdef MODULE_CAN_DEBUG
-      Serial.print("Command not found: ");
       Serial.println(eventName);
     #endif
   }
@@ -175,10 +156,14 @@ void ModeSlave::setup()
           Serial.println("Connected to the server");
         #endif
 
-        String message = "";
-        message += Device.ID; message += "|";
-        message += Device.TYPE; message += "|";
-        message += Device.VERSION;
+        StaticJsonBuffer<PACKET_SIZE> jsonBuffer;
+        JsonObject& data = jsonBuffer.createObject();
+        data["id"] = Device.ID;
+        data["type"] = Device.TYPE;
+        data["version"] = Device.VERSION;
+
+        String message;
+        data.printTo(message);
 
         send("setDevice", message.c_str());
       });
@@ -191,12 +176,12 @@ void ModeSlave::setup()
         #endif
       });
 
-      protocol.onMessage([&](String& message){
-        _onMessage(message);
+      protocol.onMessage([&](JsonObject& payload){
+        _onMessage(payload);
       });
 
       _lastConnectionTry = millis();
-      protocol.connect(SERVER_IP, SERVER_PORT);
+      protocol.connect(Device.ID, SERVER_IP, SERVER_PORT);
     } else {
       #ifdef MODULE_CAN_DEBUG
         Serial.println("UDP Connection failed");
@@ -229,16 +214,24 @@ void ModeSlave::loop()
   }
 }
 
-void ModeSlave::_onMessage(String& message)
+void ModeSlave::_onMessage(JsonObject& payload)
 {
-  int16_t charAt;
-  String messageTopic, messageParams;
+  int8_t foundIndex = _findEventIndex(payload["topic"]);
 
-  charAt         = message.indexOf(':');
-  messageTopic   = message.substring(0, charAt);
-  messageParams  = message.substring(charAt);
+  if (foundIndex != -1) {
+    StaticJsonBuffer<PACKET_SIZE> jsonBuffer;
+    JsonObject& out = jsonBuffer.createObject();
+    _cbFunctions[foundIndex](payload["data"], out);
 
-
-
-  _trigger(messageTopic.c_str(), params);
+    if (payload.containsKey("id")) {
+      String d;
+      out.printTo(d);
+      send(payload["id"], d.c_str());
+    }
+  } else {
+    #ifdef MODULE_CAN_DEBUG
+      Serial.print("Command not found: ");
+      Serial.println(eventName);
+    #endif
+  }
 }

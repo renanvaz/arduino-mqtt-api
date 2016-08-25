@@ -37,11 +37,11 @@ class ModuleCore
   void loop();
 
   void send(const char* topic);
-  void send(const char* topic, JsonObject& value);
-  void send(const char* topic, String& value);
-  void send(const char* topic, const char* value);
+  void send(const char* topic, JsonObject& data);
+  void send(const char* topic, String& data);
+  void send(const char* topic, const char* data);
 
-  void on(const char* eventName, std::function<void(JsonObject&)> cb);
+  void on(const char* eventName, std::function<void(JsonObject&, JsonObject&)> cb);
 
   bool isModeConfig();
   bool isModeSlave();

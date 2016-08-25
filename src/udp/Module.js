@@ -42,7 +42,7 @@ export default class Module extends ModuleCore {
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
     if (this._valuesPinMode.indexOf(mode) === -1) { throw new Error('Invalid value of param "mode": ' + mode); }
 
-    return this._send('pinMode', pin, mode);
+    return this.client.send('pinMode', {pin: pin, mode: mode});
   }
 
   /**
@@ -55,7 +55,7 @@ export default class Module extends ModuleCore {
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
     if (this._valuesDigitalLevel.indexOf(level) === -1) { throw new Error('Invalid value of param "level": ' + level); }
 
-    return this._send('digitalWrite', pin, level);
+    return this.client.send('digitalWrite', {pin: pin, level: level});
   }
 
   /**
@@ -66,7 +66,7 @@ export default class Module extends ModuleCore {
   digitalRead(pin) {
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
 
-    return this._ask('digitalRead', pin);
+    return this.client.ask('digitalRead', {pin: pin});
   }
 
   // Analog I/O
@@ -78,7 +78,7 @@ export default class Module extends ModuleCore {
   analogReference(value) {
     if (this._valuesAnalogReference.indexOf(mode) === -1) { throw new Error('Invalid value of param "value": ' + value); }
 
-    return this._send('digitalWrite', value);
+    return this.client.send('analogReference', {value: value});
   }
 
   /**
@@ -89,7 +89,7 @@ export default class Module extends ModuleCore {
   analogRead(pin) {
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
 
-    return this._ask('analogRead', pin);
+    return this.client.ask('analogRead', {pin: pin});
   }
 
   /**
@@ -101,7 +101,7 @@ export default class Module extends ModuleCore {
   analogWrite(pin, value) {
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
 
-    return this._send('analogWrite', pin, value);
+    return this.client.send('analogWrite', {pin: pin, value: value});
   }
 
   // Advanced I/O
@@ -116,7 +116,7 @@ export default class Module extends ModuleCore {
   tone(pin, frequency, duration) {
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
 
-    return this._send('tone', pin, frequency, duration);
+    return this.client.send('tone', {pin: pin, frequency: frequency, duration: duration});
   }
 
   /**
@@ -127,7 +127,7 @@ export default class Module extends ModuleCore {
   noTone(pin) {
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
 
-    return this._send('noTone', pin);
+    return this.client.send('noTone', {pin: pin});
   }
 
   /**
@@ -143,7 +143,7 @@ export default class Module extends ModuleCore {
     if (typeof clockPin !== 'number') { throw new TypeError('The param "clockPin" must be a number'); }
     if (this._valuesBitOrder.indexOf(bitOrder) === -1) { throw new Error('Invalid value of param "bitOrder": ' + bitOrder); }
 
-    return this._send('shiftOut', dataPin, clockPin, bitOrder, value);
+    return this.client.send('shiftOut', {dataPin: dataPin, clockPin: clockPin, bitOrder: bitOrder, value: value});
   }
 
   /**
@@ -158,7 +158,7 @@ export default class Module extends ModuleCore {
     if (typeof clockPin !== 'number') { throw new TypeError('The param "clockPin" must be a number'); }
     if (this._valuesBitOrder.indexOf(bitOrder) === -1) { throw new Error('Invalid value of param "bitOrder": ' + bitOrder); }
 
-    return this._ask('shiftIn', dataPin, clockPin, bitOrder);
+    return this.client.ask('shiftIn', {dataPin: dataPin, clockPin: clockPin, bitOrder: bitOrder});
   }
 
   /**
@@ -172,7 +172,7 @@ export default class Module extends ModuleCore {
     if (typeof pin !== 'number') { throw new TypeError('The param "pin" must be a number'); }
     if (this._valuesDigitalLevel.indexOf(value) === -1) { throw new Error('Invalid value of param "value": ' + value); }
 
-    return this._ask('pulseIn', pin, value, timeout);
+    return this.client.ask('pulseIn', {pin: pin, value: value, timeout: timeout});
 
     return d.promise;
   }

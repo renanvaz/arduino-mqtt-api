@@ -40,9 +40,9 @@ class ModeSlave
   void setup();
   void loop();
 
-  void send(const char* topic, const char* value); // Send UDP packet
+  void send(const char* topic, const char* data);
 
-  void on(const char* eventName, std::function<void(JsonObject& params)> cb);
+  void on(const char* eventName, std::function<void(JsonObject&, JsonObject&)> cb);
 
   void createDefaultAPI();
 
@@ -52,10 +52,9 @@ class ModeSlave
 
   uint8_t _cbIndex = 0;
   const char* _cbNames[MAX_CALLBACKS];
-  std::function<void(JsonObject& params)> _cbFunctions[MAX_CALLBACKS];
+  std::function<void(JsonObject&, JsonObject&)> _cbFunctions[MAX_CALLBACKS];
 
-  void _trigger(const char* eventName, JsonObject& params);
-  void _onMessage(String& message);
+  void _onMessage(JsonObject& payload);
   int8_t _findEventIndex(const char* eventName);
 };
 

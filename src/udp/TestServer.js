@@ -19,7 +19,39 @@ s.on('connection', (client) => {
     b = new Module(ID, TYPE, VERSION, client);
 
     b.pinMode(pin, OUTPUT);
-    b.digitalWrite(pin, state ? HIGH : LOW);
+
+    let p = 40;
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+    b.digitalWrite(p++, state ? HIGH : LOW);
+
+    $.loop(1000, () => {
+      console.time('t');
+
+      b.digitalRead(pin).then((v) => {
+        console.timeEnd('t');
+        console.log(v.level);
+      });
+    });
   });
 });
 

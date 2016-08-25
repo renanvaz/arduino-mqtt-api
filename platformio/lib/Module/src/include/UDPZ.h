@@ -8,6 +8,7 @@
 
 #include <Arduino.h>
 #include <WiFiUdp.h>
+#include <ArduinoJson.h>
 #include <cstdint>
 #include <functional>
 
@@ -22,20 +23,22 @@ class UDPZ
     ~UDPZ();
 
     int16_t setup();
-    void connect(IPAddress ip, uint16_t port);
+    void connect(const char* id, IPAddress ip, uint16_t port);
     void reconnect();
     void disconnect();
     bool connected();
     void loop();
-    void send(const char* message);
+    void send(const char* topic);
+    void send(const char* topic, const char* data);
     void onConnected(std::function<void()> cb);
     void onDisconnected(std::function<void()> cb);
-    void onMessage(std::function<void(String&)> cb);
+    void onMessage(std::function<void(JsonObject& params)> cb);
   private:
     std::function<void()> _onConnectedCb;
     std::function<void()> _onDisconnectedCb;
-    std::function<void(String&)> _onMessageCb;
+    std::function<void(JsonObject& params)> _onMessageCb;
 
+    const char* _id;
     IPAddress _ip;
     uint16_t _port;
     unsigned long _lastTalkTime;

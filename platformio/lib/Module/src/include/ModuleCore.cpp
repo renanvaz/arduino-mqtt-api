@@ -81,55 +81,53 @@ void ModuleCore::send(const char* topic)
   _modeSlave->send(topic, "");
 }
 
-void ModuleCore::send(const char* topic, JsonObject& value)
+void ModuleCore::send(const char* topic, JsonObject& data)
 {
-  String v;
-  value.printTo(v);
+  String d;
+  data.printTo(d);
 
-  Serial.print("Debug prontTo: ");
-  Serial.println(v);
-
-  _modeSlave->send(topic, v.c_str());
+  _modeSlave->send(topic, d.c_str());
 }
 
-void ModuleCore::send(const char* topic, String& value)
+void ModuleCore::send(const char* topic, String& data)
 {
-  _modeSlave->send(topic, value.c_str());
+  _modeSlave->send(topic, data.c_str());
 }
 
-void ModuleCore::send(const char* topic, const char* value)
+void ModuleCore::send(const char* topic, const char* data)
 {
-  _modeSlave->send(topic, value);
+  _modeSlave->send(topic, data);
 }
 
-void ModuleCore::on(const char* eventName, std::function<void(JsonObject& params)> cb)
+void ModuleCore::on(const char* eventName, std::function<void(JsonObject&, JsonObject&)> cb)
 {
   _modeSlave->on(eventName, cb);
 }
 
 void ModuleCore::createDefaultAPI()
 {
-  on("pinMode", [](JsonObject& params){
-    uint8_t pin = params["pin"];
-    String mode = params["mode"];
+  StaticJsonBuffer<0> b;
+  JsonObject& r = b.createObject();
+
+  on("pinMode", [](JsonObject& in, JsonObject& out) {
+    uint8_t pin = in["pin"];
+    String mode = in["mode"];
 
     pinMode(pin, mode == "OUTPUT" ? OUTPUT : INPUT);
   });
 
-  on("digitalWrite", [](JsonObject& params){
-    uint8_t pin  = params["pin"];
-    String value = params["value"];
+  on("digitalWrite", [](JsonObject& in, JsonObject& out) {
+    uint8_t pin  = in["pin"];
+    String level = in["level"];
+    Serial.println(pin);
 
-    digitalWrite(pin, value == "1" ? HIGH : LOW);
+    digitalWrite(pin, level == "1" ? HIGH : LOW);
   });
 
-  on("digitalRead", [&](JsonObject& params){
-    const char* id = params["id"];
-    uint8_t pin    = params["pin"];
-    uint8_t value  = digitalRead(pin);
+  on("digitalRead", [](JsonObject& in, JsonObject& out) {
+    uint8_t pin    = in["pin"];
+    uint8_t level  = digitalRead(pin);
 
-    String res     = "{\"value\":\""+String(value)+"\"}";
-
-    send(id, res);
+    out["level"] = level;
   });
 }

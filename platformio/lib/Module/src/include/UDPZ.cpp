@@ -17,22 +17,23 @@ UDPZ::~UDPZ()
 {
 }
 
-void UDPZ::connect(IPAddress ip, uint16_t port)
+void UDPZ::connect(const char* id, IPAddress ip, uint16_t port)
 {
+  _id   = id;
   _ip   = ip;
   _port = port;
 
-  send("+");
+  send("connect", _id);
 }
 
 void UDPZ::reconnect()
 {
-  send("+");
+  send("connect", _id);
 }
 
 void UDPZ::disconnect()
 {
-  send("-");
+  send("disconnect");
 }
 
 bool UDPZ::connected()
@@ -50,7 +51,7 @@ void UDPZ::onDisconnected(std::function<void()> cb)
   _onDisconnectedCb = cb;
 }
 
-void UDPZ::onMessage(std::function<void(String&)> cb)
+void UDPZ::onMessage(std::function<void(JsonObject& params)> cb)
 {
   _onMessageCb = cb;
 }
@@ -84,13 +85,16 @@ void UDPZ::loop()
     _packetBuffer[_packetSize] = '\0';
     _lastTalkTime = now;
 
-    if (_packetBuffer[0] == '.') { // Ping
-      send(".");
-    } else if (_packetBuffer[0] == '-') { // Disconnect
+    StaticJsonBuffer<PACKET_SIZE> jsonBuffer;
+    JsonObject& params = jsonBuffer.parseObject(_packetBuffer);
+
+    if (strcmp(params["topic"], "ping") == 0) { // Ping
+      send("ping");
+    } else if (strcmp(params["topic"], "disconnect") == 0) { // Disconnect
       _isConnected = false;
 
       _onDisconnectedCb();
-    } else if (_packetBuffer[0] == '+') { // Connect
+    } else if (strcmp(params["topic"], "connect") == 0) { // Connect
       _isConnected = true;
 
       _onConnectedCb();
@@ -105,12 +109,11 @@ void UDPZ::loop()
       Serial.print(":");
       Serial.println(_remotePort);
       Serial.print("Message: ");
-      Serial.println(_packetBuffer);
+      params.printTo(Serial);
+      Serial.println();
       #endif
 
-      String message = String(_packetBuffer);
-
-      _onMessageCb(message);
+      _onMessageCb(params);
     }
   } else if (_isConnected) {
     now = millis();
@@ -123,16 +126,31 @@ void UDPZ::loop()
   }
 }
 
-void UDPZ::send(const char* message)
+void UDPZ::send(const char* topic)
 {
+    send(topic, "");
+}
+
+void UDPZ::send(const char* topic, const char* data)
+{
+  StaticJsonBuffer<PACKET_SIZE> jsonBuffer;
+  JsonObject& message = jsonBuffer.createObject();
+  message["topic"] = topic;
+  message["data"] = data;
+
+  String v;
+  message.printTo(v);
+
   #ifdef MODULE_CAN_DEBUG
-  if (strcmp(message, ".") != 0 && strcmp(message, "+") != 0 && strcmp(message, "-") != 0) {
+  if (strcmp(topic, "ping") != 0 && strcmp(topic, "connect") != 0 && strcmp(topic, "disconnect") != 0) {
     Serial.print("Send message: ");
-    Serial.println(message);
+    message.printTo(Serial);
+    Serial.println();
   }
   #endif
 
   Udp.beginPacket(_ip, _port);
-  Udp.write(message);
+  message.printTo(Udp);
+  Udp.println();
   Udp.endPacket();
 }
